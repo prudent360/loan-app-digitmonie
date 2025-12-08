@@ -106,5 +106,10 @@ export const currencyAPI = {
   getActive: () => api.get('/currency'),
 }
 
+// Loan Settings API (public)
+export const loanSettingsAPI = {
+  get: () => api.get('/loan-settings'),
+}
+
 export default api
 

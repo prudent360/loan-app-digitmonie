@@ -40,4 +40,17 @@ class SettingsController extends Controller
     {
         return response()->json(Setting::getActiveCurrency());
     }
+
+    public function getLoanSettings()
+    {
+        $settings = Setting::getValue('loan_settings', [
+            'min_amount' => 50000,
+            'max_amount' => 5000000,
+            'min_tenure' => 3,
+            'max_tenure' => 36,
+            'default_interest_rate' => 15,
+        ]);
+        
+        return response()->json($settings);
+    }
 }

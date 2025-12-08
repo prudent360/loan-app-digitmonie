@@ -1,20 +1,40 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CustomerLayout from '../../components/layouts/CustomerLayout'
 import { useToast } from '../../context/ToastContext'
-import { ArrowLeft, ArrowRight, Calculator, CheckCircle2 } from 'lucide-react'
+import { loanSettingsAPI } from '../../services/api'
+import { ArrowLeft, ArrowRight, Calculator, CheckCircle2, Loader2 } from 'lucide-react'
 
 const loanPurposes = ['Business Expansion', 'Education', 'Medical Emergency', 'Home Renovation', 'Vehicle Purchase', 'Debt Consolidation', 'Personal', 'Other']
 
 export default function LoanApplication() {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [settingsLoading, setSettingsLoading] = useState(true)
+  const [settings, setSettings] = useState({ min_amount: 50000, max_amount: 5000000, min_tenure: 3, max_tenure: 36, default_interest_rate: 15 })
   const [formData, setFormData] = useState({ amount: 500000, tenure_months: 12, purpose: '', purpose_details: '', employment_type: '', monthly_income: '', bank_name: '', account_number: '' })
   
   const toast = useToast()
   const navigate = useNavigate()
-  const interestRate = 15
 
+  // Fetch loan settings from API
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await loanSettingsAPI.get()
+        setSettings(res.data)
+        // Set default amount to midpoint
+        setFormData(prev => ({ ...prev, amount: Math.floor((res.data.min_amount + res.data.max_amount) / 2) }))
+      } catch (err) {
+        console.error('Failed to load loan settings:', err)
+      } finally {
+        setSettingsLoading(false)
+      }
+    }
+    loadSettings()
+  }, [])
+
+  const interestRate = settings.default_interest_rate
   const monthlyRate = interestRate / 12 / 100
   const emi = (formData.amount * monthlyRate * Math.pow(1 + monthlyRate, formData.tenure_months)) / (Math.pow(1 + monthlyRate, formData.tenure_months) - 1)
   const totalPayment = emi * formData.tenure_months
@@ -31,9 +51,13 @@ export default function LoanApplication() {
     setLoading(false)
   }
 
-  const isStep1Valid = formData.amount >= 50000 && formData.tenure_months >= 3
+  const isStep1Valid = formData.amount >= settings.min_amount && formData.tenure_months >= settings.min_tenure
   const isStep2Valid = formData.purpose && formData.employment_type && formData.monthly_income
   const isStep3Valid = formData.bank_name && formData.account_number
+
+  if (settingsLoading) {
+    return <CustomerLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-primary-600" size={32} /></div></CustomerLayout>
+  }
 
   return (
     <CustomerLayout>
@@ -70,14 +94,14 @@ export default function LoanApplication() {
             <div className="mb-8">
               <label className="form-label">Loan Amount</label>
               <div className="text-3xl font-bold text-text mb-4">{formatCurrency(formData.amount)}</div>
-              <input type="range" name="amount" min="50000" max="5000000" step="50000" value={formData.amount} onChange={handleChange} className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary-600" />
-              <div className="flex justify-between text-xs text-text-muted mt-2"><span>₦50,000</span><span>₦5,000,000</span></div>
+              <input type="range" name="amount" min={settings.min_amount} max={settings.max_amount} step="50000" value={formData.amount} onChange={handleChange} className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary-600" />
+              <div className="flex justify-between text-xs text-text-muted mt-2"><span>{formatCurrency(settings.min_amount)}</span><span>{formatCurrency(settings.max_amount)}</span></div>
             </div>
 
             <div className="mb-8">
               <label className="form-label">Repayment Tenure</label>
               <div className="flex flex-wrap gap-2">
-                {[3, 6, 12, 18, 24, 36].map((months) => (
+                {[3, 6, 12, 18, 24, 36].filter(m => m >= settings.min_tenure && m <= settings.max_tenure).map((months) => (
                   <button key={months} type="button" className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${formData.tenure_months === months ? 'bg-primary-600 text-white' : 'bg-muted text-text hover:bg-border'}`} onClick={() => setFormData(prev => ({ ...prev, tenure_months: months }))}>
                     {months} months
                   </button>

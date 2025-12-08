@@ -28,6 +28,9 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 // Get active currency (public)
 Route::get('/currency', [SettingsController::class, 'getActiveCurrency']);
 
+// Get loan settings (public)
+Route::get('/loan-settings', [SettingsController::class, 'getLoanSettings']);
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Auth
