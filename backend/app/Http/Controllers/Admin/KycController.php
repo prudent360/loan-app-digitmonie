@@ -66,25 +66,25 @@ class KycController extends Controller
     }
 
     /**
-     * Check if user has all required documents approved and update their kyc_status
+     * Check if user has all their uploaded documents approved and update their kyc_status
      */
     private function checkAndUpdateUserKycStatus($user)
     {
-        $requiredTypes = ['id_card', 'passport', 'utility_bill', 'bank_statement'];
+        // Get all user's KYC documents
+        $allDocuments = $user->kycDocuments()->get();
         
-        // Get approved document types for this user
-        $approvedTypes = $user->kycDocuments()
-            ->where('status', 'approved')
-            ->pluck('document_type')
-            ->toArray();
-
-        // Check if user has at least one ID (id_card OR passport) and utility_bill and bank_statement
-        $hasValidId = in_array('id_card', $approvedTypes) || in_array('passport', $approvedTypes);
-        $hasUtilityBill = in_array('utility_bill', $approvedTypes);
-        $hasBankStatement = in_array('bank_statement', $approvedTypes);
-
-        // If user has valid ID + utility bill + bank statement, verify their KYC
-        if ($hasValidId && $hasUtilityBill && $hasBankStatement) {
+        // If no documents, stay pending
+        if ($allDocuments->isEmpty()) {
+            return;
+        }
+        
+        // Check if there are any pending documents
+        $hasPending = $allDocuments->where('status', 'pending')->count() > 0;
+        
+        // Check if all documents are approved (no pending and no rejected with pending status)
+        $allApproved = $allDocuments->every(fn($doc) => $doc->status === 'approved');
+        
+        if ($allApproved) {
             $user->update(['kyc_status' => 'verified']);
         }
     }

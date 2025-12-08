@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CustomerLayout from '../../components/layouts/CustomerLayout'
 import { useToast } from '../../context/ToastContext'
-import { loanSettingsAPI } from '../../services/api'
+import { loanSettingsAPI, loanAPI } from '../../services/api'
 import { ArrowLeft, ArrowRight, Calculator, CheckCircle2, Loader2 } from 'lucide-react'
 
 const loanPurposes = ['Business Expansion', 'Education', 'Medical Emergency', 'Home Renovation', 'Vehicle Purchase', 'Debt Consolidation', 'Personal', 'Other']
@@ -45,10 +45,28 @@ export default function LoanApplication() {
 
   const handleSubmit = async () => {
     setLoading(true)
-    await new Promise(r => setTimeout(r, 1500))
-    toast.success('Loan application submitted successfully!')
-    setStep(4)
-    setLoading(false)
+    try {
+      const loanData = {
+        amount: formData.amount,
+        tenure_months: formData.tenure_months,
+        interest_rate: interestRate,
+        purpose: formData.purpose,
+        purpose_details: formData.purpose_details,
+        employment_type: formData.employment_type,
+        monthly_income: formData.monthly_income,
+        bank_name: formData.bank_name,
+        account_number: formData.account_number,
+      }
+      await loanAPI.apply(loanData)
+      toast.success('Loan application submitted successfully!')
+      setStep(4)
+    } catch (err) {
+      const message = err.response?.data?.message || 'Failed to submit loan application'
+      toast.error(message)
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const isStep1Valid = formData.amount >= settings.min_amount && formData.tenure_months >= settings.min_tenure

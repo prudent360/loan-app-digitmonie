@@ -1,29 +1,47 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import CustomerLayout from '../../components/layouts/CustomerLayout'
-import { PlusCircle, FileText, Search, ChevronRight, Clock, CheckCircle2, XCircle } from 'lucide-react'
-
-const mockLoans = [
-  { id: 1, amount: 500000, interest_rate: 15, tenure_months: 12, purpose: 'Business Expansion', status: 'completed', created_at: '2024-06-15', total_paid: 500000, total_due: 500000 },
-  { id: 2, amount: 1000000, interest_rate: 12, tenure_months: 24, purpose: 'Education', status: 'active', created_at: '2024-10-01', total_paid: 350000, total_due: 1000000 },
-  { id: 3, amount: 500000, interest_rate: 15, tenure_months: 6, purpose: 'Medical Emergency', status: 'pending', created_at: '2024-12-01', total_paid: 0, total_due: 0 },
-]
+import { loanAPI } from '../../services/api'
+import { PlusCircle, FileText, Search, ChevronRight, Loader2 } from 'lucide-react'
 
 export default function CustomerLoans() {
-  const [loans] = useState(mockLoans)
-  const [filtered, setFiltered] = useState(mockLoans)
+  const [loans, setLoans] = useState([])
+  const [filtered, setFiltered] = useState([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
 
+  // Fetch loans from API
+  useEffect(() => {
+    const loadLoans = async () => {
+      try {
+        const res = await loanAPI.getAll()
+        const loansData = res.data.data || res.data.loans || res.data || []
+        setLoans(loansData)
+      } catch (err) {
+        console.error('Failed to load loans:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadLoans()
+  }, [])
+
+  // Filter loans
   useEffect(() => {
     let result = loans
-    if (search) result = result.filter(l => l.purpose.toLowerCase().includes(search.toLowerCase()))
+    if (search) result = result.filter(l => l.purpose?.toLowerCase().includes(search.toLowerCase()))
     if (statusFilter !== 'all') result = result.filter(l => l.status === statusFilter)
     setFiltered(result)
   }, [loans, search, statusFilter])
 
-  const formatCurrency = (amount) => `₦${amount.toLocaleString()}`
-  const getStatusBadge = (s) => ({ pending: 'badge badge-warning', active: 'badge badge-success', completed: 'badge badge-info', rejected: 'badge badge-error' }[s] || 'badge')
+  const formatCurrency = (amount) => `₦${Number(amount).toLocaleString()}`
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '-'
+  const getStatusBadge = (s) => ({ pending: 'badge badge-warning', active: 'badge badge-success', completed: 'badge badge-info', rejected: 'badge badge-error', approved: 'badge badge-success', disbursed: 'badge badge-info' }[s] || 'badge')
+
+  if (loading) {
+    return <CustomerLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-primary-600" size={32} /></div></CustomerLayout>
+  }
 
   return (
     <CustomerLayout>
@@ -46,7 +64,7 @@ export default function CustomerLoans() {
             <input type="text" placeholder="Search by purpose..." value={search} onChange={(e) => setSearch(e.target.value)} className="flex-1 bg-transparent border-none text-text text-sm outline-none placeholder:text-text-muted" />
           </div>
           <div className="flex gap-2">
-            {['all', 'active', 'pending', 'completed'].map(s => (
+            {['all', 'pending', 'approved', 'active', 'completed'].map(s => (
               <button key={s} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${statusFilter === s ? 'bg-primary-600 text-white' : 'bg-muted text-text-muted hover:text-text'}`} onClick={() => setStatusFilter(s)}>
                 {s.charAt(0).toUpperCase() + s.slice(1)}
               </button>
@@ -70,11 +88,11 @@ export default function CustomerLoans() {
               <tbody>
                 {filtered.map((loan) => (
                   <tr key={loan.id}>
-                    <td className="font-medium text-text">{loan.purpose}</td>
+                    <td className="font-medium text-text">{loan.purpose || '-'}</td>
                     <td className="text-text">{formatCurrency(loan.amount)}</td>
                     <td className="text-text-muted">{loan.interest_rate}% p.a.</td>
                     <td className="text-text-muted">{loan.tenure_months} months</td>
-                    <td className="text-text-muted">{loan.created_at}</td>
+                    <td className="text-text-muted">{formatDate(loan.created_at)}</td>
                     <td><span className={getStatusBadge(loan.status)}>{loan.status}</span></td>
                     <td><Link to={`/loans/${loan.id}`} className="text-primary-600 hover:underline text-sm flex items-center gap-1">View <ChevronRight size={14} /></Link></td>
                   </tr>

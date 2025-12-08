@@ -66,9 +66,18 @@ class LoanController extends Controller
 
     public function store(Request $request)
     {
+        // Get loan settings from database
+        $loanSettings = \App\Models\Setting::getValue('loan_settings', [
+            'min_amount' => 50000,
+            'max_amount' => 5000000,
+            'min_tenure' => 3,
+            'max_tenure' => 36,
+            'default_interest_rate' => 15,
+        ]);
+
         $request->validate([
-            'amount' => 'required|numeric|min:50000|max:5000000',
-            'tenure_months' => 'required|integer|min:3|max:36',
+            'amount' => 'required|numeric|min:' . $loanSettings['min_amount'] . '|max:' . $loanSettings['max_amount'],
+            'tenure_months' => 'required|integer|min:' . $loanSettings['min_tenure'] . '|max:' . $loanSettings['max_tenure'],
             'purpose' => 'required|string|max:255',
             'purpose_details' => 'nullable|string',
             'employment_type' => 'required|string',
@@ -80,7 +89,7 @@ class LoanController extends Controller
         $loan = Loan::create([
             'user_id' => $request->user()->id,
             'amount' => $request->amount,
-            'interest_rate' => 15, // Default rate
+            'interest_rate' => $loanSettings['default_interest_rate'],
             'tenure_months' => $request->tenure_months,
             'purpose' => $request->purpose,
             'purpose_details' => $request->purpose_details,

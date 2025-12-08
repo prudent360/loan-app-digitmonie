@@ -110,4 +110,30 @@ class RoleController extends Controller
         
         return response()->json(['users' => $users]);
     }
+
+    public function createStaff(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8',
+            'roles' => 'required|array|min:1',
+        ]);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => bcrypt($request->password),
+            'role' => 'admin',
+            'status' => 'active',
+        ]);
+
+        // Assign roles
+        $user->syncRoles($request->roles);
+
+        return response()->json([
+            'message' => 'Staff member created successfully',
+            'user' => $user->load('roles'),
+        ], 201);
+    }
 }

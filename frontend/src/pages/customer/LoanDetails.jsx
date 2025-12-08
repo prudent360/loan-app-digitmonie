@@ -1,24 +1,45 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import CustomerLayout from '../../components/layouts/CustomerLayout'
-import { ArrowLeft, Calendar, CheckCircle2, Clock, CreditCard, Download } from 'lucide-react'
-
-const mockLoan = { id: 2, amount: 1000000, interest_rate: 12, tenure_months: 24, purpose: 'Education', purpose_details: 'Masters degree program', status: 'active', created_at: '2024-10-01', approved_at: '2024-10-02', disbursed_at: '2024-10-03', emi: 47073, total_interest: 129753, total_payable: 1129753, total_paid: 350000, remaining_balance: 779753, next_payment_date: '2025-01-15' }
-const mockRepayments = [
-  { id: 1, amount: 47073, due_date: '2024-11-01', paid_at: '2024-10-30', status: 'paid' },
-  { id: 2, amount: 47073, due_date: '2024-12-01', paid_at: '2024-11-28', status: 'paid' },
-  { id: 3, amount: 47073, due_date: '2025-01-01', paid_at: null, status: 'pending' },
-  { id: 4, amount: 47073, due_date: '2025-02-01', paid_at: null, status: 'pending' },
-]
+import { loanAPI } from '../../services/api'
+import { ArrowLeft, Calendar, CheckCircle2, Clock, CreditCard, Download, Loader2 } from 'lucide-react'
 
 export default function LoanDetails() {
+  const { id } = useParams()
   const navigate = useNavigate()
-  const [loan] = useState(mockLoan)
-  const [repayments] = useState(mockRepayments)
+  const [loading, setLoading] = useState(true)
+  const [loan, setLoan] = useState(null)
+  const [repayments, setRepayments] = useState([])
 
-  const formatCurrency = (amount) => `₦${amount.toLocaleString()}`
-  const progressPercent = Math.round((loan.total_paid / loan.total_payable) * 100)
-  const getStatusBadge = (s) => `badge ${({ pending: 'badge-warning', paid: 'badge-success', active: 'badge-success', overdue: 'badge-error' }[s] || 'badge-info')}`
+  useEffect(() => {
+    const loadLoan = async () => {
+      try {
+        const res = await loanAPI.getOne(id)
+        setLoan(res.data)
+        setRepayments(res.data.repayments || [])
+      } catch (err) {
+        console.error('Failed to load loan:', err)
+        navigate('/loans')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadLoan()
+  }, [id])
+
+  const formatCurrency = (amount) => `₦${Number(amount).toLocaleString()}`
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '-'
+  const getStatusBadge = (s) => `badge ${({ pending: 'badge-warning', paid: 'badge-success', active: 'badge-success', approved: 'badge-success', disbursed: 'badge-info', overdue: 'badge-error', rejected: 'badge-error', completed: 'badge-info' }[s] || 'badge-info')}`
+
+  if (loading) {
+    return <CustomerLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-primary-600" size={32} /></div></CustomerLayout>
+  }
+
+  if (!loan) {
+    return <CustomerLayout><div className="text-center py-16 text-text-muted">Loan not found</div></CustomerLayout>
+  }
+
+  const progressPercent = loan.total_payable ? Math.round((Number(loan.total_paid || 0) / Number(loan.total_payable)) * 100) : 0
 
   return (
     <CustomerLayout>
@@ -30,7 +51,7 @@ export default function LoanDetails() {
           </button>
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-text">{loan.purpose}</h1>
+              <h1 className="text-2xl font-semibold text-text">{loan.purpose || 'Loan Application'}</h1>
               <p className="text-text-muted">Application ID: #LN-{String(loan.id).padStart(6, '0')}</p>
             </div>
             <span className={getStatusBadge(loan.status)}>{loan.status}</span>
@@ -42,15 +63,15 @@ export default function LoanDetails() {
           <div className="lg:col-span-2 card">
             <div className="flex flex-wrap gap-8 mb-6">
               <div><span className="text-xs text-text-muted uppercase tracking-wide">Loan Amount</span><p className="text-2xl font-bold text-text">{formatCurrency(loan.amount)}</p></div>
-              <div><span className="text-xs text-text-muted uppercase tracking-wide">Monthly EMI</span><p className="text-2xl font-bold text-text">{formatCurrency(loan.emi)}</p></div>
+              <div><span className="text-xs text-text-muted uppercase tracking-wide">Monthly EMI</span><p className="text-2xl font-bold text-text">{formatCurrency(loan.emi || 0)}</p></div>
               <div><span className="text-xs text-text-muted uppercase tracking-wide">Interest Rate</span><p className="text-2xl font-bold text-text">{loan.interest_rate}%</p></div>
               <div><span className="text-xs text-text-muted uppercase tracking-wide">Tenure</span><p className="text-2xl font-bold text-text">{loan.tenure_months} mo</p></div>
             </div>
-            {(loan.status === 'active' || loan.status === 'completed') && (
+            {(loan.status === 'active' || loan.status === 'completed' || loan.status === 'disbursed') && (
               <div className="pt-4 border-t border-border">
                 <div className="flex justify-between text-sm mb-2"><span className="text-text-muted">Repayment Progress</span><span className="font-medium text-text">{progressPercent}%</span></div>
                 <div className="w-full h-2 bg-muted rounded-full overflow-hidden"><div className="h-full bg-primary-600 rounded-full transition-all" style={{ width: `${progressPercent}%` }} /></div>
-                <div className="flex justify-between text-xs text-text-muted mt-2"><span>Paid: {formatCurrency(loan.total_paid)}</span><span>Remaining: {formatCurrency(loan.remaining_balance)}</span></div>
+                <div className="flex justify-between text-xs text-text-muted mt-2"><span>Paid: {formatCurrency(loan.total_paid || 0)}</span><span>Remaining: {formatCurrency(loan.remaining_balance || 0)}</span></div>
               </div>
             )}
           </div>
@@ -58,8 +79,8 @@ export default function LoanDetails() {
           {/* Summary Card */}
           <div className="summary-card">
             <p className="label">Next Payment Due</p>
-            <p className="value">{formatCurrency(loan.emi)}</p>
-            <p className="text-sm text-primary-100 mt-1">{loan.next_payment_date}</p>
+            <p className="value">{formatCurrency(loan.emi || 0)}</p>
+            <p className="text-sm text-primary-100 mt-1">{loan.next_payment?.due_date ? formatDate(loan.next_payment.due_date) : 'No payments scheduled'}</p>
             <button className="w-full mt-6 bg-white text-primary-600 font-medium py-2.5 rounded-lg hover:bg-primary-50 transition-colors flex items-center justify-center gap-2">
               <CreditCard size={18} /> Make Payment
             </button>
@@ -71,7 +92,7 @@ export default function LoanDetails() {
           <div className="card">
             <h3 className="text-sm font-medium text-text mb-4">Loan Details</h3>
             <div className="space-y-3 text-sm">
-              {[['Principal Amount', formatCurrency(loan.amount)], ['Total Interest', formatCurrency(loan.total_interest)], ['Total Payable', formatCurrency(loan.total_payable)], ['Purpose', loan.purpose_details || loan.purpose]].map(([l, v]) => (
+              {[['Principal Amount', formatCurrency(loan.amount)], ['Total Interest', formatCurrency(loan.total_interest || 0)], ['Total Payable', formatCurrency(loan.total_payable || 0)], ['Purpose', loan.purpose_details || loan.purpose || '-']].map(([l, v]) => (
                 <div key={l} className="flex justify-between"><span className="text-text-muted">{l}</span><span className="font-medium text-text">{v}</span></div>
               ))}
             </div>
@@ -85,7 +106,7 @@ export default function LoanDetails() {
                     {done ? <CheckCircle2 size={14} /> : <Clock size={14} />}
                   </div>
                   <div className="flex-1"><p className="font-medium text-text">{label}</p></div>
-                  <span className="text-text-muted">{date || '-'}</span>
+                  <span className="text-text-muted">{date ? formatDate(date) : '-'}</span>
                 </div>
               ))}
             </div>
@@ -98,20 +119,24 @@ export default function LoanDetails() {
             <h3 className="text-sm font-medium text-text">Repayment Schedule</h3>
             <button className="btn btn-outline btn-sm"><Download size={14} /> Download</button>
           </div>
-          <table className="table">
-            <thead><tr><th>#</th><th>Due Date</th><th>Amount</th><th>Paid On</th><th>Status</th></tr></thead>
-            <tbody>
-              {repayments.map((p, i) => (
-                <tr key={p.id}>
-                  <td className="text-text">{i + 1}</td>
-                  <td className="text-text">{p.due_date}</td>
-                  <td className="font-medium text-text">{formatCurrency(p.amount)}</td>
-                  <td className="text-text-muted">{p.paid_at || '-'}</td>
-                  <td><span className={getStatusBadge(p.status)}>{p.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {repayments.length === 0 ? (
+            <div className="text-center py-10 text-text-muted">No repayment schedule yet</div>
+          ) : (
+            <table className="table">
+              <thead><tr><th>#</th><th>Due Date</th><th>Amount</th><th>Paid On</th><th>Status</th></tr></thead>
+              <tbody>
+                {repayments.map((p, i) => (
+                  <tr key={p.id}>
+                    <td className="text-text">{i + 1}</td>
+                    <td className="text-text">{formatDate(p.due_date)}</td>
+                    <td className="font-medium text-text">{formatCurrency(p.amount)}</td>
+                    <td className="text-text-muted">{p.paid_at ? formatDate(p.paid_at) : '-'}</td>
+                    <td><span className={getStatusBadge(p.status)}>{p.status}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </CustomerLayout>

@@ -81,7 +81,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/roles/{role}', [RoleController::class, 'update']);
             Route::delete('/roles/{role}', [RoleController::class, 'destroy']);
             Route::post('/users/{user}/roles', [RoleController::class, 'assignToUser']);
+            Route::put('/users/{user}/roles', [RoleController::class, 'assignToUser']);
             Route::get('/staff', [RoleController::class, 'getStaffUsers']);
+            Route::post('/staff', [RoleController::class, 'createStaff']);
         });
 
         // Loans - require manage_loans permission
