@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import AdminLayout from '../../components/layouts/AdminLayout'
 import { useToast } from '../../context/ToastContext'
 import { adminAPI } from '../../services/api'
-import { Search, Eye, CheckCircle, XCircle, X, Loader2 } from 'lucide-react'
+import { Search, Eye, CheckCircle, XCircle, X, Loader2, Banknote } from 'lucide-react'
 
 export default function AdminLoans() {
   const [loans, setLoans] = useState([])
@@ -72,9 +72,24 @@ export default function AdminLoans() {
     }
   }
 
+  const handleDisburse = async (id) => {
+    setActionLoading(true)
+    try {
+      await adminAPI.disburseLoan(id)
+      setLoans(prev => prev.map(l => l.id === id ? { ...l, status: 'disbursed' } : l))
+      toast.success('Loan disbursed successfully!')
+      setSelectedLoan(null)
+    } catch (err) {
+      toast.error('Failed to disburse loan')
+      console.error(err)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const formatCurrency = (amount) => `₦${Number(amount).toLocaleString()}`
   const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '-'
-  const getStatusBadge = (s) => ({ pending: 'badge-warning', approved: 'badge-success', rejected: 'badge-error', disbursed: 'badge-info' }[s] || '')
+  const getStatusBadge = (s) => ({ pending: 'badge-warning', approved: 'badge-success', rejected: 'badge-error', disbursed: 'badge-info', active: 'badge-success', completed: 'badge-primary' }[s] || '')
 
   if (loading) {
     return <AdminLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-primary-600" size={32} /></div></AdminLayout>
@@ -92,7 +107,7 @@ export default function AdminLoans() {
             <input type="text" placeholder="Search by applicant..." value={search} onChange={(e) => setSearch(e.target.value)} className="flex-1 bg-transparent border-none text-text text-sm outline-none placeholder:text-text-muted" />
           </div>
           <div className="flex gap-2 overflow-x-auto">
-            {['all', 'pending', 'approved', 'rejected'].map(s => (
+            {['all', 'pending', 'approved', 'disbursed', 'rejected'].map(s => (
               <button key={s} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${statusFilter === s ? 'bg-primary-600 text-white' : 'bg-muted text-text-muted hover:text-text'}`} onClick={() => setStatusFilter(s)}>{s.charAt(0).toUpperCase() + s.slice(1)}</button>
             ))}
           </div>
@@ -119,9 +134,12 @@ export default function AdminLoans() {
                         <button className="p-1.5 rounded text-text-muted hover:text-text hover:bg-muted" onClick={() => setSelectedLoan(loan)}><Eye size={16} /></button>
                         {loan.status === 'pending' && (
                           <>
-                            <button className="p-1.5 rounded text-text-muted hover:text-primary-600 hover:bg-primary-50" onClick={() => handleApprove(loan.id)}><CheckCircle size={16} /></button>
-                            <button className="p-1.5 rounded text-text-muted hover:text-red-600 hover:bg-red-50" onClick={() => setSelectedLoan({ ...loan, showReject: true })}><XCircle size={16} /></button>
+                            <button className="p-1.5 rounded text-text-muted hover:text-primary-600 hover:bg-primary-50" onClick={() => handleApprove(loan.id)} title="Approve"><CheckCircle size={16} /></button>
+                            <button className="p-1.5 rounded text-text-muted hover:text-red-600 hover:bg-red-50" onClick={() => setSelectedLoan({ ...loan, showReject: true })} title="Reject"><XCircle size={16} /></button>
                           </>
+                        )}
+                        {loan.status === 'approved' && (
+                          <button className="p-1.5 rounded text-text-muted hover:text-green-600 hover:bg-green-50" onClick={() => handleDisburse(loan.id)} title="Disburse"><Banknote size={16} /></button>
                         )}
                       </div>
                     </td>
@@ -154,8 +172,10 @@ export default function AdminLoans() {
               <div className="modal-footer">
                 {selectedLoan.showReject ? (
                   <><button className="btn btn-outline" onClick={() => setSelectedLoan(null)} disabled={actionLoading}>Cancel</button><button className="btn btn-danger" onClick={() => handleReject(selectedLoan.id)} disabled={actionLoading}>{actionLoading ? 'Rejecting...' : 'Reject'}</button></>
-                ) : selectedLoan.status === 'pending' && (
+                ) : selectedLoan.status === 'pending' ? (
                   <><button className="btn btn-danger" onClick={() => setSelectedLoan({ ...selectedLoan, showReject: true })}>Reject</button><button className="btn btn-primary" onClick={() => handleApprove(selectedLoan.id)} disabled={actionLoading}>{actionLoading ? 'Approving...' : 'Approve'}</button></>
+                ) : selectedLoan.status === 'approved' && (
+                  <button className="btn btn-primary" onClick={() => handleDisburse(selectedLoan.id)} disabled={actionLoading}><Banknote size={16} /> {actionLoading ? 'Disbursing...' : 'Disburse Funds'}</button>
                 )}
               </div>
             </div>

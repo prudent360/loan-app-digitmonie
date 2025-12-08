@@ -93,6 +93,32 @@ export default function LoanDetails() {
     setShowPaymentModal(true)
   }
 
+  const downloadSchedule = () => {
+    if (!loan || repayments.length === 0) return
+    const headers = ['EMI #', 'Due Date', 'Amount', 'Status', 'Paid On']
+    const rows = repayments.map((p, i) => [
+      i + 1,
+      formatDate(p.due_date),
+      p.amount,
+      p.status,
+      p.paid_at ? formatDate(p.paid_at) : '-'
+    ])
+    
+    const loanInfo = `Loan ID,#LN-${String(loan.id).padStart(6, '0')}\nPrincipal,${loan.amount}\nInterest Rate,${loan.interest_rate}%\nTenure,${loan.tenure_months} months\n\n`
+    const csvContent = loanInfo + [headers, ...rows].map(row => row.join(',')).join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `repayment-schedule-LN-${String(loan.id).padStart(6, '0')}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const getNextPendingRepayment = () => {
+    return repayments.find(r => r.status === 'pending')
+  }
+
   const formatCurrency = (amount) => `₦${Number(amount).toLocaleString()}`
   const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '-'
   const getStatusBadge = (s) => `badge ${({ pending: 'badge-warning', paid: 'badge-success', active: 'badge-success', approved: 'badge-success', disbursed: 'badge-info', overdue: 'badge-error', rejected: 'badge-error', completed: 'badge-info' }[s] || 'badge-info')}`
@@ -145,13 +171,20 @@ export default function LoanDetails() {
 
           {/* Summary Card */}
           <div className="summary-card">
-            <p className="label">Next Payment Due</p>
-            <p className="value">{formatCurrency(loan.emi || 0)}</p>
-            <p className="text-sm text-primary-100 mt-1">{loan.next_payment?.due_date ? formatDate(loan.next_payment.due_date) : 'No payments scheduled'}</p>
+            {(() => {
+              const nextRepayment = getNextPendingRepayment()
+              return (
+                <>
+                  <p className="label">Next Payment Due</p>
+                  <p className="value">{nextRepayment ? formatCurrency(nextRepayment.amount) : formatCurrency(loan.emi || 0)}</p>
+                  <p className="text-sm text-primary-100 mt-1">{nextRepayment ? formatDate(nextRepayment.due_date) : (repayments.every(r => r.status === 'paid') ? 'All payments completed!' : 'No payments scheduled')}</p>
+                </>
+              )
+            })()}
             {canMakePayment && (
               <button
                 className="w-full mt-6 bg-white text-primary-600 font-medium py-2.5 rounded-lg hover:bg-primary-50 transition-colors flex items-center justify-center gap-2"
-                onClick={() => openPaymentModal()}
+                onClick={() => openPaymentModal(getNextPendingRepayment())}
               >
                 <CreditCard size={18} /> Make Payment
               </button>
@@ -189,7 +222,7 @@ export default function LoanDetails() {
         <div className="card p-0">
           <div className="flex items-center justify-between px-6 py-4 border-b border-border">
             <h3 className="text-sm font-medium text-text">Repayment Schedule</h3>
-            <button className="btn btn-outline btn-sm"><Download size={14} /> Download</button>
+            <button className="btn btn-outline btn-sm" onClick={downloadSchedule}><Download size={14} /> Download</button>
           </div>
           {repayments.length === 0 ? (
             <div className="text-center py-10 text-text-muted">No repayment schedule yet</div>
