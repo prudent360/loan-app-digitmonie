@@ -1,0 +1,110 @@
+import axios from 'axios'
+
+const api = axios.create({
+  baseURL: '/api',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+})
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
+)
+
+// Response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
+// Auth APIs - routes are at /api/register, /api/login, etc.
+export const authAPI = {
+  register: (data) => api.post('/register', data),
+  login: (data) => api.post('/login', data),
+  logout: () => api.post('/logout'),
+  getUser: () => api.get('/user'),
+  forgotPassword: (email) => api.post('/forgot-password', { email }),
+}
+
+// Profile APIs - routes at /api/customer/profile
+export const profileAPI = {
+  get: () => api.get('/customer/profile'),
+  update: (data) => api.put('/customer/profile', data),
+  updatePassword: (data) => api.put('/customer/profile/password', data),
+}
+
+// KYC APIs - routes at /api/customer/kyc
+export const kycAPI = {
+  getDocuments: () => api.get('/customer/kyc'),
+  uploadDocument: (formData) => api.post('/customer/kyc', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  deleteDocument: (id) => api.delete(`/customer/kyc/${id}`),
+}
+
+// Loan APIs - routes at /api/customer/loans
+export const loanAPI = {
+  getAll: () => api.get('/customer/loans'),
+  getOne: (id) => api.get(`/customer/loans/${id}`),
+  apply: (data) => api.post('/customer/loans', data),
+  getRepayments: (loanId) => api.get(`/customer/loans/${loanId}/repayments`),
+  recordPayment: (loanId, data) => api.post(`/customer/loans/${loanId}/pay`, data),
+}
+
+// Dashboard APIs - routes at /api/customer/dashboard
+export const dashboardAPI = {
+  getStats: () => api.get('/customer/dashboard/stats'),
+  getChartData: () => api.get('/customer/dashboard/chart'),
+}
+
+// Admin APIs
+export const adminAPI = {
+  // Dashboard
+  getDashboardStats: () => api.get('/admin/dashboard/stats'),
+  getDashboardChart: () => api.get('/admin/dashboard/chart'),
+  
+  // Users
+  getUsers: (params) => api.get('/admin/users', { params }),
+  getUser: (id) => api.get(`/admin/users/${id}`),
+  updateUserStatus: (id, status) => api.patch(`/admin/users/${id}/status`, { status }),
+  
+  // Loans
+  getLoans: (params) => api.get('/admin/loans', { params }),
+  getLoan: (id) => api.get(`/admin/loans/${id}`),
+  approveLoan: (id) => api.post(`/admin/loans/${id}/approve`),
+  rejectLoan: (id, reason) => api.post(`/admin/loans/${id}/reject`, { reason }),
+  disburseLoan: (id) => api.post(`/admin/loans/${id}/disburse`),
+  
+  // KYC
+  getKYCDocuments: (params) => api.get('/admin/kyc', { params }),
+  approveKYC: (id) => api.post(`/admin/kyc/${id}/approve`),
+  rejectKYC: (id, reason) => api.post(`/admin/kyc/${id}/reject`, { reason }),
+  
+  // Settings
+  getSettings: () => api.get('/admin/settings'),
+  updateSettings: (data) => api.put('/admin/settings', data),
+}
+
+// Currency API (public)
+export const currencyAPI = {
+  getActive: () => api.get('/currency'),
+}
+
+export default api
+
