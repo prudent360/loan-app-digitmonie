@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AdminLayout from '../../components/layouts/AdminLayout'
 import { useToast } from '../../context/ToastContext'
-import { Save, DollarSign, Percent, Mail } from 'lucide-react'
+import { adminAPI } from '../../services/api'
+import { Save, DollarSign, Percent, Mail, Loader2 } from 'lucide-react'
 
 const defaultCurrencies = [
   { code: 'NGN', symbol: '₦', name: 'Nigerian Naira', active: true },
@@ -12,22 +13,67 @@ const defaultCurrencies = [
 export default function AdminSettings() {
   const toast = useToast()
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [currencies, setCurrencies] = useState(defaultCurrencies)
   const [loanSettings, setLoanSettings] = useState({ min_amount: 50000, max_amount: 5000000, min_tenure: 3, max_tenure: 36, default_interest_rate: 15 })
   const [notificationSettings, setNotificationSettings] = useState({ reminder_days_before: 3, overdue_notification: true, approval_notification: true, disbursement_notification: true })
+
+  // Load settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      setLoading(true)
+      try {
+        const res = await adminAPI.getSettings()
+        if (res.data.currencies?.length) setCurrencies(res.data.currencies)
+        if (res.data.loan_settings) setLoanSettings(res.data.loan_settings)
+        if (res.data.notification_settings) setNotificationSettings(res.data.notification_settings)
+      } catch (err) {
+        console.error('Failed to load settings:', err)
+        // Use defaults on error
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadSettings()
+  }, [])
 
   const handleCurrencyChange = (code) => setCurrencies(prev => prev.map(c => ({ ...c, active: c.code === code })))
   const handleLoanSettingChange = (e) => setLoanSettings(prev => ({ ...prev, [e.target.name]: Number(e.target.value) }))
   const handleNotificationChange = (e) => setNotificationSettings(prev => ({ ...prev, [e.target.name]: e.target.type === 'checkbox' ? e.target.checked : Number(e.target.value) }))
 
-  const handleSave = async () => { setLoading(true); await new Promise(r => setTimeout(r, 1000)); toast.success('Settings saved!'); setLoading(false) }
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await adminAPI.updateSettings({
+        currencies,
+        loan_settings: loanSettings,
+        notification_settings: notificationSettings,
+      })
+      toast.success('Settings saved successfully!')
+    } catch (err) {
+      toast.error('Failed to save settings')
+      console.error(err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="animate-spin text-primary-600" size={32} />
+        </div>
+      </AdminLayout>
+    )
+  }
 
   return (
     <AdminLayout>
       <div className="max-w-3xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div><h1 className="text-2xl font-semibold text-text">System Settings</h1><p className="text-text-muted">Configure your loan management system</p></div>
-          <button className="btn btn-primary" onClick={handleSave} disabled={loading}><Save size={16} />{loading ? 'Saving...' : 'Save Changes'}</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving}><Save size={16} />{saving ? 'Saving...' : 'Save Changes'}</button>
         </div>
 
         {/* Currency Settings */}

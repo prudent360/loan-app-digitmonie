@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\LoanController as AdminLoanController;
 use App\Http\Controllers\Admin\KycController as AdminKycController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\RoleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,31 +58,49 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/kyc/{document}', [CustomerKycController::class, 'destroy']);
     });
 
-    // Admin routes
-    Route::prefix('admin')->middleware('admin')->group(function () {
-        // Dashboard
+    // Admin routes - require any admin role
+    Route::prefix('admin')->middleware('role:super_admin,loan_manager,kyc_officer,support')->group(function () {
+        // Dashboard (view_reports permission)
         Route::get('/dashboard/stats', [AdminDashboardController::class, 'stats']);
         Route::get('/dashboard/chart', [AdminDashboardController::class, 'chartData']);
 
-        // Users
-        Route::get('/users', [UserController::class, 'index']);
-        Route::get('/users/{user}', [UserController::class, 'show']);
-        Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
+        // Users - require manage_users permission
+        Route::middleware('permission:manage_users')->group(function () {
+            Route::get('/users', [UserController::class, 'index']);
+            Route::get('/users/{user}', [UserController::class, 'show']);
+            Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
+        });
 
-        // Loans
-        Route::get('/loans', [AdminLoanController::class, 'index']);
-        Route::get('/loans/{loan}', [AdminLoanController::class, 'show']);
-        Route::post('/loans/{loan}/approve', [AdminLoanController::class, 'approve']);
-        Route::post('/loans/{loan}/reject', [AdminLoanController::class, 'reject']);
-        Route::post('/loans/{loan}/disburse', [AdminLoanController::class, 'disburse']);
+        // Roles - require assign_roles permission (super_admin only)
+        Route::middleware('permission:assign_roles')->group(function () {
+            Route::get('/roles', [RoleController::class, 'index']);
+            Route::post('/roles', [RoleController::class, 'store']);
+            Route::put('/roles/{role}', [RoleController::class, 'update']);
+            Route::delete('/roles/{role}', [RoleController::class, 'destroy']);
+            Route::post('/users/{user}/roles', [RoleController::class, 'assignToUser']);
+            Route::get('/staff', [RoleController::class, 'getStaffUsers']);
+        });
 
-        // KYC
-        Route::get('/kyc', [AdminKycController::class, 'index']);
-        Route::post('/kyc/{document}/approve', [AdminKycController::class, 'approve']);
-        Route::post('/kyc/{document}/reject', [AdminKycController::class, 'reject']);
+        // Loans - require manage_loans permission
+        Route::middleware('permission:manage_loans')->group(function () {
+            Route::get('/loans', [AdminLoanController::class, 'index']);
+            Route::get('/loans/{loan}', [AdminLoanController::class, 'show']);
+            Route::post('/loans/{loan}/approve', [AdminLoanController::class, 'approve']);
+            Route::post('/loans/{loan}/reject', [AdminLoanController::class, 'reject']);
+            Route::post('/loans/{loan}/disburse', [AdminLoanController::class, 'disburse']);
+        });
 
-        // Settings
-        Route::get('/settings', [SettingsController::class, 'index']);
-        Route::put('/settings', [SettingsController::class, 'update']);
+        // KYC - require manage_kyc permission
+        Route::middleware('permission:manage_kyc')->group(function () {
+            Route::get('/kyc', [AdminKycController::class, 'index']);
+            Route::post('/kyc/{document}/approve', [AdminKycController::class, 'approve']);
+            Route::post('/kyc/{document}/reject', [AdminKycController::class, 'reject']);
+        });
+
+        // Settings - require manage_settings permission
+        Route::middleware('permission:manage_settings')->group(function () {
+            Route::get('/settings', [SettingsController::class, 'index']);
+            Route::put('/settings', [SettingsController::class, 'update']);
+        });
     });
 });

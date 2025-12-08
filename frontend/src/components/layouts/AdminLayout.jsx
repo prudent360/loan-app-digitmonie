@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { Wallet, LayoutDashboard, Users, FileText, Upload, Settings, LogOut, Menu, X } from 'lucide-react'
+import { Wallet, LayoutDashboard, Users, FileText, Upload, Settings, LogOut, Menu, X, Shield } from 'lucide-react'
 import { useState } from 'react'
 
 export default function AdminLayout({ children }) {
@@ -15,6 +15,7 @@ export default function AdminLayout({ children }) {
     { to: '/admin/users', icon: Users, label: 'Users' },
     { to: '/admin/loans', icon: FileText, label: 'Loan Applications' },
     { to: '/admin/kyc', icon: Upload, label: 'KYC Review' },
+    { to: '/admin/roles', icon: Shield, label: 'Roles & Access' },
     { to: '/admin/settings', icon: Settings, label: 'Settings' },
   ]
 
