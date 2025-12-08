@@ -49,6 +49,7 @@ class SettingsController extends Controller
             'min_tenure' => 3,
             'max_tenure' => 36,
             'default_interest_rate' => 15,
+            'admin_fee' => 2,
         ]);
         
         return response()->json($settings);

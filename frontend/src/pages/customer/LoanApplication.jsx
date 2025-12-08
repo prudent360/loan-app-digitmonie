@@ -11,7 +11,7 @@ export default function LoanApplication() {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [settingsLoading, setSettingsLoading] = useState(true)
-  const [settings, setSettings] = useState({ min_amount: 50000, max_amount: 5000000, min_tenure: 3, max_tenure: 36, default_interest_rate: 15 })
+  const [settings, setSettings] = useState({ min_amount: 50000, max_amount: 5000000, min_tenure: 3, max_tenure: 36, default_interest_rate: 15, admin_fee: 2 })
   const [formData, setFormData] = useState({ amount: 500000, tenure_months: 12, purpose: '', purpose_details: '', employment_type: '', monthly_income: '', bank_name: '', account_number: '' })
   
   const toast = useToast()
@@ -35,6 +35,8 @@ export default function LoanApplication() {
   }, [])
 
   const interestRate = settings.default_interest_rate
+  const adminFeePercent = settings.admin_fee || 0
+  const adminFeeAmount = (formData.amount * adminFeePercent) / 100
   const monthlyRate = interestRate / 12 / 100
   const emi = (formData.amount * monthlyRate * Math.pow(1 + monthlyRate, formData.tenure_months)) / (Math.pow(1 + monthlyRate, formData.tenure_months) - 1)
   const totalPayment = emi * formData.tenure_months
@@ -134,11 +136,13 @@ export default function LoanApplication() {
                 <div><span className="text-text-muted">Interest Rate</span><p className="font-semibold text-text">{interestRate}% p.a.</p></div>
                 <div><span className="text-text-muted">Monthly EMI</span><p className="font-semibold text-primary-600">{formatCurrency(emi)}</p></div>
                 <div><span className="text-text-muted">Total Interest</span><p className="font-semibold text-text">{formatCurrency(totalInterest)}</p></div>
+                {adminFeePercent > 0 && <div><span className="text-text-muted">Admin Fee ({adminFeePercent}%)</span><p className="font-semibold text-amber-600">{formatCurrency(adminFeeAmount)}</p></div>}
               </div>
               <div className="flex justify-between items-center pt-4 mt-4 border-t border-border text-sm">
                 <span className="text-text-muted">Total Payable</span>
-                <span className="text-xl font-bold text-primary-600">{formatCurrency(totalPayment)}</span>
+                <span className="text-xl font-bold text-primary-600">{formatCurrency(totalPayment + adminFeeAmount)}</span>
               </div>
+              {adminFeePercent > 0 && <p className="text-xs text-text-muted mt-2">*Admin fee is deducted from disbursement amount</p>}
             </div>
 
             <button className="btn btn-primary w-full" onClick={() => setStep(2)} disabled={!isStep1Valid}>Continue <ArrowRight size={16} /></button>

@@ -15,7 +15,7 @@ export default function AdminSettings() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [currencies, setCurrencies] = useState(defaultCurrencies)
-  const [loanSettings, setLoanSettings] = useState({ min_amount: 50000, max_amount: 5000000, min_tenure: 3, max_tenure: 36, default_interest_rate: 15 })
+  const [loanSettings, setLoanSettings] = useState({ min_amount: 50000, max_amount: 5000000, min_tenure: 3, max_tenure: 36, default_interest_rate: 15, admin_fee: 2 })
   const [notificationSettings, setNotificationSettings] = useState({ reminder_days_before: 3, overdue_notification: true, approval_notification: true, disbursement_notification: true })
 
   // Load settings on mount
@@ -99,7 +99,8 @@ export default function AdminSettings() {
             {[['min_amount', 'Min Amount'], ['max_amount', 'Max Amount'], ['min_tenure', 'Min Tenure (months)'], ['max_tenure', 'Max Tenure (months)']].map(([name, label]) => (
               <div key={name} className="form-group"><label className="form-label">{label}</label><input type="number" name={name} className="form-input" value={loanSettings[name]} onChange={handleLoanSettingChange} /></div>
             ))}
-            <div className="form-group sm:col-span-2"><label className="form-label">Default Interest Rate (% p.a.)</label><input type="number" name="default_interest_rate" className="form-input" step="0.5" value={loanSettings.default_interest_rate} onChange={handleLoanSettingChange} /></div>
+            <div className="form-group"><label className="form-label">Default Interest Rate (% p.a.)</label><input type="number" name="default_interest_rate" className="form-input" step="0.5" value={loanSettings.default_interest_rate} onChange={handleLoanSettingChange} /></div>
+            <div className="form-group"><label className="form-label">Admin Fee (%)</label><input type="number" name="admin_fee" className="form-input" step="0.5" min="0" max="100" value={loanSettings.admin_fee || 0} onChange={handleLoanSettingChange} /><p className="text-xs text-text-muted mt-1">Fee charged on loan disbursement</p></div>
           </div>
         </div>
 
