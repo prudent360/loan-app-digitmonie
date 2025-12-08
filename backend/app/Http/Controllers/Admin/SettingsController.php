@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class SettingsController extends Controller
 {
@@ -19,6 +20,7 @@ class SettingsController extends Controller
                 'paystack' => ['public_key' => '', 'secret_key' => '', 'enabled' => true],
                 'flutterwave' => ['public_key' => '', 'secret_key' => '', 'enabled' => false],
             ]),
+            'logo_url' => Setting::getValue('logo_url', null),
         ]);
     }
 
@@ -45,6 +47,52 @@ class SettingsController extends Controller
         ]);
     }
 
+    public function uploadLogo(Request $request)
+    {
+        $request->validate([
+            'logo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+
+        // Delete old logo if exists
+        $oldLogo = Setting::getValue('logo_url', null);
+        if ($oldLogo) {
+            $oldPath = str_replace('/storage/', '', $oldLogo);
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        // Store new logo
+        $path = $request->file('logo')->store('logos', 'public');
+        $url = '/storage/' . $path;
+
+        Setting::setValue('logo_url', $url);
+
+        return response()->json([
+            'message' => 'Logo uploaded successfully',
+            'logo_url' => $url,
+        ]);
+    }
+
+    public function deleteLogo()
+    {
+        try {
+            $logo = Setting::getValue('logo_url', null);
+            if ($logo) {
+                $path = str_replace('/storage/', '', $logo);
+                Storage::disk('public')->delete($path);
+                // Delete the setting record instead of setting null
+                Setting::where('key', 'logo_url')->delete();
+            }
+
+            return response()->json([
+                'message' => 'Logo removed successfully',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete logo: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function getActiveCurrency()
     {
         return response()->json(Setting::getActiveCurrency());
@@ -62,5 +110,13 @@ class SettingsController extends Controller
         ]);
         
         return response()->json($settings);
+    }
+
+    public function getLogo()
+    {
+        $logoUrl = Setting::getValue('logo_url', null);
+        return response()->json([
+            'logo_url' => $logoUrl,
+        ]);
     }
 }

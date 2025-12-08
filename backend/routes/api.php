@@ -33,6 +33,9 @@ Route::get('/currency', [SettingsController::class, 'getActiveCurrency']);
 // Get loan settings (public)
 Route::get('/loan-settings', [SettingsController::class, 'getLoanSettings']);
 
+// Get logo (public)
+Route::get('/logo', [SettingsController::class, 'getLogo']);
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Auth
@@ -120,6 +123,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware('permission:manage_settings')->group(function () {
             Route::get('/settings', [SettingsController::class, 'index']);
             Route::put('/settings', [SettingsController::class, 'update']);
+            Route::post('/settings/logo', [SettingsController::class, 'uploadLogo']);
+            Route::delete('/settings/logo', [SettingsController::class, 'deleteLogo']);
         });
     });
 });

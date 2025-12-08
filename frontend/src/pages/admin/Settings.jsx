@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import AdminLayout from '../../components/layouts/AdminLayout'
 import { useToast } from '../../context/ToastContext'
-import { adminAPI } from '../../services/api'
-import { Save, DollarSign, Percent, Mail, Loader2, CreditCard, Eye, EyeOff } from 'lucide-react'
+import api, { adminAPI } from '../../services/api'
+import { Save, DollarSign, Percent, Mail, Loader2, CreditCard, Eye, EyeOff, Upload, Trash2, Image } from 'lucide-react'
 
 const defaultCurrencies = [
   { code: 'NGN', symbol: '₦', name: 'Nigerian Naira', active: true },
@@ -25,6 +25,9 @@ export default function AdminSettings() {
   const [notificationSettings, setNotificationSettings] = useState({ reminder_days_before: 3, overdue_notification: true, approval_notification: true, disbursement_notification: true })
   const [paymentGateways, setPaymentGateways] = useState(defaultPaymentGateways)
   const [showSecrets, setShowSecrets] = useState({ paystack: false, flutterwave: false })
+  const [logoUrl, setLogoUrl] = useState(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const logoInputRef = useRef(null)
 
   // Load settings on mount
   useEffect(() => {
@@ -36,6 +39,7 @@ export default function AdminSettings() {
         if (res.data.loan_settings) setLoanSettings(res.data.loan_settings)
         if (res.data.notification_settings) setNotificationSettings(res.data.notification_settings)
         if (res.data.payment_gateways) setPaymentGateways(res.data.payment_gateways)
+        if (res.data.logo_url) setLogoUrl(res.data.logo_url)
       } catch (err) {
         console.error('Failed to load settings:', err)
       } finally {
@@ -83,6 +87,55 @@ export default function AdminSettings() {
     }
   }
 
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file')
+      return
+    }
+    
+    const formData = new FormData()
+    formData.append('logo', file)
+    
+    setUploadingLogo(true)
+    try {
+      const res = await api.post('/admin/settings/logo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      setLogoUrl(res.data.logo_url)
+      toast.success('Logo uploaded successfully!')
+    } catch (err) {
+      toast.error('Failed to upload logo')
+      console.error(err)
+    } finally {
+      setUploadingLogo(false)
+      if (logoInputRef.current) logoInputRef.current.value = ''
+    }
+  }
+
+  const handleDeleteLogo = async () => {
+    if (!confirm('Remove the current logo?')) return
+    try {
+      await api.delete('/admin/settings/logo')
+      setLogoUrl(null)
+      toast.success('Logo removed')
+    } catch (err) {
+      toast.error('Failed to remove logo')
+      console.error('Delete logo error:', err)
+    }
+  }
+
+  // Build full logo URL for display
+  const getLogoDisplayUrl = (url) => {
+    if (!url) return null
+    // If URL starts with http, it's already absolute
+    if (url.startsWith('http')) return url
+    // Otherwise prepend the backend URL
+    return `http://localhost:8000${url}`
+  }
+
   if (loading) {
     return <AdminLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-primary-600" size={32} /></div></AdminLayout>
   }
@@ -93,6 +146,30 @@ export default function AdminSettings() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div><h1 className="text-2xl font-semibold text-text">System Settings</h1><p className="text-text-muted">Configure your loan management system</p></div>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}><Save size={16} />{saving ? 'Saving...' : 'Save Changes'}</button>
+        </div>
+
+        {/* Logo Upload */}
+        <div className="card">
+          <div className="flex items-center gap-2 mb-1"><Image size={18} className="text-primary-600" /><h3 className="text-sm font-medium text-text">Company Logo</h3></div>
+          <p className="text-xs text-text-muted mb-4">Upload your company logo (max 2MB, PNG/JPG)</p>
+          <div className="flex items-center gap-6">
+            <div className="w-24 h-24 bg-muted rounded-lg flex items-center justify-center border border-border overflow-hidden">
+              {logoUrl ? (
+                <img src={getLogoDisplayUrl(logoUrl)} alt="Company Logo" className="w-full h-full object-contain" />
+              ) : (
+                <Image size={32} className="text-text-muted opacity-40" />
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <input type="file" ref={logoInputRef} accept="image/*" onChange={handleLogoUpload} className="hidden" />
+              <button className="btn btn-outline btn-sm" onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}>
+                {uploadingLogo ? <><Loader2 size={14} className="animate-spin" /> Uploading...</> : <><Upload size={14} /> Upload Logo</>}
+              </button>
+              {logoUrl && (
+                <button className="btn btn-outline btn-sm text-red-600 hover:bg-red-50" onClick={handleDeleteLogo}><Trash2 size={14} /> Remove</button>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Currency Settings */}

@@ -1,11 +1,28 @@
 import { Link } from 'react-router-dom'
 import { Wallet, Shield, Clock, TrendingUp, ArrowRight, CheckCircle2, Sparkles, BarChart3 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import api from '../services/api'
 
 export default function Landing() {
   const [loanAmount, setLoanAmount] = useState(500000)
   const [tenure, setTenure] = useState(12)
+  const [logoUrl, setLogoUrl] = useState(null)
   const interestRate = 15
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const res = await api.get('/logo')
+        if (res.data.logo_url) {
+          // Prepend backend URL for the logo
+          setLogoUrl(`http://localhost:8000${res.data.logo_url}`)
+        }
+      } catch (err) {
+        console.error('Failed to fetch logo:', err)
+      }
+    }
+    fetchLogo()
+  }, [])
 
   const monthlyRate = interestRate / 12 / 100
   const emi = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, tenure)) / (Math.pow(1 + monthlyRate, tenure) - 1)
@@ -20,10 +37,13 @@ export default function Landing() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-sm border-b border-border">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-              <Wallet size={18} className="text-white" />
-            </div>
-            <span className="text-lg font-semibold text-text">DigitMonie</span>
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" className="h-8 w-auto object-contain" />
+            ) : (
+              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                <Wallet size={18} className="text-white" />
+              </div>
+            )}
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             <a href="#features" className="text-sm text-text-muted hover:text-text">Features</a>
@@ -182,10 +202,13 @@ export default function Landing() {
           <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-8">
             <div>
               <Link to="/" className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                  <Wallet size={18} className="text-white" />
-                </div>
-                <span className="text-lg font-semibold text-text">DigitMonie</span>
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo" className="h-8 w-auto object-contain" />
+                ) : (
+                  <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                    <Wallet size={18} className="text-white" />
+                  </div>
+                )}
               </Link>
               <p className="text-sm text-text-muted max-w-xs">Smart loans for smart people. Fast, secure, and transparent lending.</p>
             </div>
