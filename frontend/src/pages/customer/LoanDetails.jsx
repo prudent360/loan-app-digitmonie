@@ -1,15 +1,22 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import CustomerLayout from '../../components/layouts/CustomerLayout'
-import { loanAPI } from '../../services/api'
-import { ArrowLeft, Calendar, CheckCircle2, Clock, CreditCard, Download, Loader2 } from 'lucide-react'
+import { loanAPI, paymentAPI } from '../../services/api'
+import { useToast } from '../../context/ToastContext'
+import { ArrowLeft, CheckCircle2, Clock, CreditCard, Download, Loader2, X } from 'lucide-react'
 
 export default function LoanDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const toast = useToast()
   const [loading, setLoading] = useState(true)
   const [loan, setLoan] = useState(null)
   const [repayments, setRepayments] = useState([])
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentAmount, setPaymentAmount] = useState('')
+  const [processingPayment, setProcessingPayment] = useState(false)
+  const [selectedRepayment, setSelectedRepayment] = useState(null)
 
   useEffect(() => {
     const loadLoan = async () => {
@@ -27,6 +34,65 @@ export default function LoanDetails() {
     loadLoan()
   }, [id])
 
+  // Handle payment callback
+  useEffect(() => {
+    const reference = searchParams.get('reference')
+    const trxref = searchParams.get('trxref')
+    const transaction_id = searchParams.get('transaction_id')
+
+    if (reference || trxref) {
+      verifyPayment(reference || trxref, transaction_id)
+    }
+  }, [searchParams])
+
+  const verifyPayment = async (reference, transactionId) => {
+    try {
+      const res = await paymentAPI.verify({ reference, transaction_id: transactionId })
+      toast.success('Payment successful!')
+      // Reload loan data
+      const loanRes = await loanAPI.getOne(id)
+      setLoan(loanRes.data)
+      setRepayments(loanRes.data.repayments || [])
+    } catch (err) {
+      toast.error('Payment verification failed')
+      console.error(err)
+    }
+  }
+
+  const handleMakePayment = async () => {
+    if (!paymentAmount || Number(paymentAmount) < 100) {
+      toast.error('Please enter a valid amount (min ₦100)')
+      return
+    }
+
+    setProcessingPayment(true)
+    try {
+      const res = await paymentAPI.initialize({
+        loan_id: loan.id,
+        repayment_id: selectedRepayment?.id || null,
+        amount: Number(paymentAmount),
+      })
+
+      if (res.data.authorization_url) {
+        // Redirect to payment gateway
+        window.location.href = res.data.authorization_url
+      } else {
+        toast.error('Failed to initialize payment')
+      }
+    } catch (err) {
+      const message = err.response?.data?.message || 'Payment initialization failed'
+      toast.error(message)
+    } finally {
+      setProcessingPayment(false)
+    }
+  }
+
+  const openPaymentModal = (repayment = null) => {
+    setSelectedRepayment(repayment)
+    setPaymentAmount(repayment ? repayment.amount : (loan.emi || ''))
+    setShowPaymentModal(true)
+  }
+
   const formatCurrency = (amount) => `₦${Number(amount).toLocaleString()}`
   const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '-'
   const getStatusBadge = (s) => `badge ${({ pending: 'badge-warning', paid: 'badge-success', active: 'badge-success', approved: 'badge-success', disbursed: 'badge-info', overdue: 'badge-error', rejected: 'badge-error', completed: 'badge-info' }[s] || 'badge-info')}`
@@ -40,6 +106,7 @@ export default function LoanDetails() {
   }
 
   const progressPercent = loan.total_payable ? Math.round((Number(loan.total_paid || 0) / Number(loan.total_payable)) * 100) : 0
+  const canMakePayment = ['active', 'disbursed', 'approved'].includes(loan.status)
 
   return (
     <CustomerLayout>
@@ -81,9 +148,14 @@ export default function LoanDetails() {
             <p className="label">Next Payment Due</p>
             <p className="value">{formatCurrency(loan.emi || 0)}</p>
             <p className="text-sm text-primary-100 mt-1">{loan.next_payment?.due_date ? formatDate(loan.next_payment.due_date) : 'No payments scheduled'}</p>
-            <button className="w-full mt-6 bg-white text-primary-600 font-medium py-2.5 rounded-lg hover:bg-primary-50 transition-colors flex items-center justify-center gap-2">
-              <CreditCard size={18} /> Make Payment
-            </button>
+            {canMakePayment && (
+              <button
+                className="w-full mt-6 bg-white text-primary-600 font-medium py-2.5 rounded-lg hover:bg-primary-50 transition-colors flex items-center justify-center gap-2"
+                onClick={() => openPaymentModal()}
+              >
+                <CreditCard size={18} /> Make Payment
+              </button>
+            )}
           </div>
         </div>
 
@@ -123,7 +195,7 @@ export default function LoanDetails() {
             <div className="text-center py-10 text-text-muted">No repayment schedule yet</div>
           ) : (
             <table className="table">
-              <thead><tr><th>#</th><th>Due Date</th><th>Amount</th><th>Paid On</th><th>Status</th></tr></thead>
+              <thead><tr><th>#</th><th>Due Date</th><th>Amount</th><th>Paid On</th><th>Status</th>{canMakePayment && <th></th>}</tr></thead>
               <tbody>
                 {repayments.map((p, i) => (
                   <tr key={p.id}>
@@ -132,6 +204,18 @@ export default function LoanDetails() {
                     <td className="font-medium text-text">{formatCurrency(p.amount)}</td>
                     <td className="text-text-muted">{p.paid_at ? formatDate(p.paid_at) : '-'}</td>
                     <td><span className={getStatusBadge(p.status)}>{p.status}</span></td>
+                    {canMakePayment && (
+                      <td>
+                        {p.status === 'pending' && (
+                          <button
+                            className="text-primary-600 hover:underline text-sm"
+                            onClick={() => openPaymentModal(p)}
+                          >
+                            Pay Now
+                          </button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -139,6 +223,52 @@ export default function LoanDetails() {
           )}
         </div>
       </div>
+
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="modal-overlay" onClick={() => setShowPaymentModal(false)}>
+          <div className="modal-content max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Make Payment</h3>
+              <button onClick={() => setShowPaymentModal(false)}><X size={20} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <CreditCard size={28} className="text-primary-600" />
+                </div>
+                <p className="text-sm text-text-muted">
+                  {selectedRepayment ? `EMI #${repayments.indexOf(selectedRepayment) + 1}` : 'Loan Repayment'}
+                </p>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Payment Amount (₦)</label>
+                <input
+                  type="number"
+                  className="form-input text-lg font-semibold text-center"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  min="100"
+                />
+              </div>
+
+              <div className="bg-muted rounded-lg p-4 text-sm space-y-2 mb-4">
+                <div className="flex justify-between"><span className="text-text-muted">Loan ID</span><span className="text-text">#{loan.id}</span></div>
+                <div className="flex justify-between"><span className="text-text-muted">Outstanding</span><span className="text-text">{formatCurrency(loan.remaining_balance || 0)}</span></div>
+              </div>
+
+              <p className="text-xs text-text-muted text-center">You will be redirected to the payment gateway to complete your payment securely.</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => setShowPaymentModal(false)} disabled={processingPayment}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleMakePayment} disabled={processingPayment}>
+                {processingPayment ? <><Loader2 size={16} className="animate-spin" /> Processing...</> : <><CreditCard size={16} /> Pay {formatCurrency(paymentAmount || 0)}</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </CustomerLayout>
   )
 }

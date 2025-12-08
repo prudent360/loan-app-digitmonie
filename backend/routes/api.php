@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\LoanController as AdminLoanController;
 use App\Http\Controllers\Admin\KycController as AdminKycController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Customer\PaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -59,6 +60,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/kyc', [CustomerKycController::class, 'index']);
         Route::post('/kyc', [CustomerKycController::class, 'store']);
         Route::delete('/kyc/{document}', [CustomerKycController::class, 'destroy']);
+
+        // Payments
+        Route::get('/payments/config', [PaymentController::class, 'getGatewayConfig']);
+        Route::post('/payments/initialize', [PaymentController::class, 'initializePayment']);
+        Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']);
+        Route::get('/payments/history', [PaymentController::class, 'getPaymentHistory']);
     });
 
     // Admin routes - require any admin role

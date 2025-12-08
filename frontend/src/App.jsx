@@ -15,6 +15,7 @@ import LoanApplication from './pages/customer/LoanApplication'
 import LoanDetails from './pages/customer/LoanDetails'
 import KYCUpload from './pages/customer/KYCUpload'
 import Profile from './pages/customer/Profile'
+import PaymentCallback from './pages/customer/PaymentCallback'
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -82,6 +83,7 @@ function AppRoutes() {
       <Route path="/loans/:id" element={<ProtectedRoute requiredRole="customer"><LoanDetails /></ProtectedRoute>} />
       <Route path="/kyc" element={<ProtectedRoute requiredRole="customer"><KYCUpload /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute requiredRole="customer"><Profile /></ProtectedRoute>} />
+      <Route path="/payment/callback" element={<ProtectedRoute requiredRole="customer"><PaymentCallback /></ProtectedRoute>} />
       
       {/* Admin Routes */}
       <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />

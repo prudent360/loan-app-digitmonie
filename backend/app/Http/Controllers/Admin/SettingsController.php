@@ -14,6 +14,11 @@ class SettingsController extends Controller
             'currencies' => Setting::getValue('currencies', []),
             'loan_settings' => Setting::getValue('loan_settings', []),
             'notification_settings' => Setting::getValue('notification_settings', []),
+            'payment_gateways' => Setting::getValue('payment_gateways', [
+                'active_gateway' => 'paystack',
+                'paystack' => ['public_key' => '', 'secret_key' => '', 'enabled' => true],
+                'flutterwave' => ['public_key' => '', 'secret_key' => '', 'enabled' => false],
+            ]),
         ]);
     }
 
@@ -29,6 +34,10 @@ class SettingsController extends Controller
 
         if ($request->has('notification_settings')) {
             Setting::setValue('notification_settings', $request->notification_settings);
+        }
+
+        if ($request->has('payment_gateways')) {
+            Setting::setValue('payment_gateways', $request->payment_gateways);
         }
 
         return response()->json([

@@ -111,5 +111,13 @@ export const loanSettingsAPI = {
   get: () => api.get('/loan-settings'),
 }
 
+// Payment APIs
+export const paymentAPI = {
+  getConfig: () => api.get('/customer/payments/config'),
+  initialize: (data) => api.post('/customer/payments/initialize', data),
+  verify: (data) => api.post('/customer/payments/verify', data),
+  getHistory: () => api.get('/customer/payments/history'),
+}
+
 export default api
 

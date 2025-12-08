@@ -2,13 +2,19 @@ import { useState, useEffect } from 'react'
 import AdminLayout from '../../components/layouts/AdminLayout'
 import { useToast } from '../../context/ToastContext'
 import { adminAPI } from '../../services/api'
-import { Save, DollarSign, Percent, Mail, Loader2 } from 'lucide-react'
+import { Save, DollarSign, Percent, Mail, Loader2, CreditCard, Eye, EyeOff } from 'lucide-react'
 
 const defaultCurrencies = [
   { code: 'NGN', symbol: '₦', name: 'Nigerian Naira', active: true },
   { code: 'USD', symbol: '$', name: 'US Dollar', active: false },
   { code: 'GBP', symbol: '£', name: 'British Pound', active: false },
 ]
+
+const defaultPaymentGateways = {
+  active_gateway: 'paystack',
+  paystack: { public_key: '', secret_key: '', enabled: true },
+  flutterwave: { public_key: '', secret_key: '', enabled: false },
+}
 
 export default function AdminSettings() {
   const toast = useToast()
@@ -17,6 +23,8 @@ export default function AdminSettings() {
   const [currencies, setCurrencies] = useState(defaultCurrencies)
   const [loanSettings, setLoanSettings] = useState({ min_amount: 50000, max_amount: 5000000, min_tenure: 3, max_tenure: 36, default_interest_rate: 15, admin_fee: 2 })
   const [notificationSettings, setNotificationSettings] = useState({ reminder_days_before: 3, overdue_notification: true, approval_notification: true, disbursement_notification: true })
+  const [paymentGateways, setPaymentGateways] = useState(defaultPaymentGateways)
+  const [showSecrets, setShowSecrets] = useState({ paystack: false, flutterwave: false })
 
   // Load settings on mount
   useEffect(() => {
@@ -27,9 +35,9 @@ export default function AdminSettings() {
         if (res.data.currencies?.length) setCurrencies(res.data.currencies)
         if (res.data.loan_settings) setLoanSettings(res.data.loan_settings)
         if (res.data.notification_settings) setNotificationSettings(res.data.notification_settings)
+        if (res.data.payment_gateways) setPaymentGateways(res.data.payment_gateways)
       } catch (err) {
         console.error('Failed to load settings:', err)
-        // Use defaults on error
       } finally {
         setLoading(false)
       }
@@ -41,6 +49,22 @@ export default function AdminSettings() {
   const handleLoanSettingChange = (e) => setLoanSettings(prev => ({ ...prev, [e.target.name]: Number(e.target.value) }))
   const handleNotificationChange = (e) => setNotificationSettings(prev => ({ ...prev, [e.target.name]: e.target.type === 'checkbox' ? e.target.checked : Number(e.target.value) }))
 
+  const handlePaymentGatewayChange = (gateway, field, value) => {
+    setPaymentGateways(prev => ({
+      ...prev,
+      [gateway]: { ...prev[gateway], [field]: value }
+    }))
+  }
+
+  const handleActiveGatewayChange = (gateway) => {
+    setPaymentGateways(prev => ({
+      ...prev,
+      active_gateway: gateway,
+      paystack: { ...prev.paystack, enabled: gateway === 'paystack' },
+      flutterwave: { ...prev.flutterwave, enabled: gateway === 'flutterwave' },
+    }))
+  }
+
   const handleSave = async () => {
     setSaving(true)
     try {
@@ -48,6 +72,7 @@ export default function AdminSettings() {
         currencies,
         loan_settings: loanSettings,
         notification_settings: notificationSettings,
+        payment_gateways: paymentGateways,
       })
       toast.success('Settings saved successfully!')
     } catch (err) {
@@ -59,13 +84,7 @@ export default function AdminSettings() {
   }
 
   if (loading) {
-    return (
-      <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="animate-spin text-primary-600" size={32} />
-        </div>
-      </AdminLayout>
-    )
+    return <AdminLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-primary-600" size={32} /></div></AdminLayout>
   }
 
   return (
@@ -101,6 +120,84 @@ export default function AdminSettings() {
             ))}
             <div className="form-group"><label className="form-label">Default Interest Rate (% p.a.)</label><input type="number" name="default_interest_rate" className="form-input" step="0.5" value={loanSettings.default_interest_rate} onChange={handleLoanSettingChange} /></div>
             <div className="form-group"><label className="form-label">Admin Fee (%)</label><input type="number" name="admin_fee" className="form-input" step="0.5" min="0" max="100" value={loanSettings.admin_fee || 0} onChange={handleLoanSettingChange} /><p className="text-xs text-text-muted mt-1">Fee charged on loan disbursement</p></div>
+          </div>
+        </div>
+
+        {/* Payment Gateway Settings */}
+        <div className="card">
+          <div className="flex items-center gap-2 mb-1"><CreditCard size={18} className="text-primary-600" /><h3 className="text-sm font-medium text-text">Payment Gateways</h3></div>
+          <p className="text-xs text-text-muted mb-4">Configure Paystack and Flutterwave for loan repayments</p>
+
+          {/* Active Gateway Selection */}
+          <div className="mb-6">
+            <label className="form-label">Active Payment Gateway</label>
+            <div className="flex gap-2 mt-2">
+              {['paystack', 'flutterwave'].map(gw => (
+                <button
+                  key={gw}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${paymentGateways.active_gateway === gw ? 'bg-primary-600 text-white' : 'bg-muted text-text-muted hover:text-text'}`}
+                  onClick={() => handleActiveGatewayChange(gw)}
+                >
+                  {gw.charAt(0).toUpperCase() + gw.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Paystack Config */}
+          <div className="p-4 border border-border rounded-lg mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold text-xs">PS</div>
+                <strong className="text-text text-sm">Paystack</strong>
+              </div>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${paymentGateways.active_gateway === 'paystack' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                {paymentGateways.active_gateway === 'paystack' ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+              <div className="form-group">
+                <label className="form-label text-xs">Public Key</label>
+                <input type="text" className="form-input text-sm" placeholder="pk_test_..." value={paymentGateways.paystack?.public_key || ''} onChange={(e) => handlePaymentGatewayChange('paystack', 'public_key', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label text-xs">Secret Key</label>
+                <div className="relative">
+                  <input type={showSecrets.paystack ? 'text' : 'password'} className="form-input text-sm pr-10" placeholder="sk_test_..." value={paymentGateways.paystack?.secret_key || ''} onChange={(e) => handlePaymentGatewayChange('paystack', 'secret_key', e.target.value)} />
+                  <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text" onClick={() => setShowSecrets(prev => ({ ...prev, paystack: !prev.paystack }))}>
+                    {showSecrets.paystack ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Flutterwave Config */}
+          <div className="p-4 border border-border rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600 font-bold text-xs">FW</div>
+                <strong className="text-text text-sm">Flutterwave</strong>
+              </div>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${paymentGateways.active_gateway === 'flutterwave' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                {paymentGateways.active_gateway === 'flutterwave' ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+              <div className="form-group">
+                <label className="form-label text-xs">Public Key</label>
+                <input type="text" className="form-input text-sm" placeholder="FLWPUBK_TEST-..." value={paymentGateways.flutterwave?.public_key || ''} onChange={(e) => handlePaymentGatewayChange('flutterwave', 'public_key', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label text-xs">Secret Key</label>
+                <div className="relative">
+                  <input type={showSecrets.flutterwave ? 'text' : 'password'} className="form-input text-sm pr-10" placeholder="FLWSECK_TEST-..." value={paymentGateways.flutterwave?.secret_key || ''} onChange={(e) => handlePaymentGatewayChange('flutterwave', 'secret_key', e.target.value)} />
+                  <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text" onClick={() => setShowSecrets(prev => ({ ...prev, flutterwave: !prev.flutterwave }))}>
+                    {showSecrets.flutterwave ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
