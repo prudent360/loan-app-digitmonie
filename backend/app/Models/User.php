@@ -19,6 +19,7 @@ class User extends Authenticatable
         'phone',
         'role',
         'status',
+        'kyc_status',
         'address',
         'city',
         'state',

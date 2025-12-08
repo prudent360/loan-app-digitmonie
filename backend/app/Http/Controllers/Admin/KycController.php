@@ -33,6 +33,9 @@ class KycController extends Controller
             'reviewed_at' => now(),
         ]);
 
+        // Check if all documents are approved - auto-verify user's KYC
+        $this->checkAndUpdateUserKycStatus($document->user);
+
         return response()->json([
             'message' => 'Document approved',
             'document' => $document,
@@ -60,5 +63,29 @@ class KycController extends Controller
             'message' => 'Document rejected',
             'document' => $document,
         ]);
+    }
+
+    /**
+     * Check if user has all required documents approved and update their kyc_status
+     */
+    private function checkAndUpdateUserKycStatus($user)
+    {
+        $requiredTypes = ['id_card', 'passport', 'utility_bill', 'bank_statement'];
+        
+        // Get approved document types for this user
+        $approvedTypes = $user->kycDocuments()
+            ->where('status', 'approved')
+            ->pluck('document_type')
+            ->toArray();
+
+        // Check if user has at least one ID (id_card OR passport) and utility_bill and bank_statement
+        $hasValidId = in_array('id_card', $approvedTypes) || in_array('passport', $approvedTypes);
+        $hasUtilityBill = in_array('utility_bill', $approvedTypes);
+        $hasBankStatement = in_array('bank_statement', $approvedTypes);
+
+        // If user has valid ID + utility bill + bank statement, verify their KYC
+        if ($hasValidId && $hasUtilityBill && $hasBankStatement) {
+            $user->update(['kyc_status' => 'verified']);
+        }
     }
 }

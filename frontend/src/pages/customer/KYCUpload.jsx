@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import CustomerLayout from '../../components/layouts/CustomerLayout'
 import { useToast } from '../../context/ToastContext'
-import { Upload, FileText, X, CheckCircle2, Clock, XCircle, AlertCircle, Eye } from 'lucide-react'
+import { kycAPI } from '../../services/api'
+import { Upload, FileText, X, CheckCircle2, Clock, XCircle, AlertCircle, Loader2 } from 'lucide-react'
 
 const documentTypes = [
   { id: 'id_card', name: 'National ID Card', description: 'Valid Nigerian National ID' },
@@ -9,17 +10,29 @@ const documentTypes = [
   { id: 'utility_bill', name: 'Utility Bill', description: 'Recent electricity or water bill (max 3 months old)' },
   { id: 'bank_statement', name: 'Bank Statement', description: 'Last 6 months bank statement' },
 ]
-const mockDocuments = [
-  { id: 1, document_type: 'id_card', file_name: 'national_id.jpg', status: 'approved', created_at: '2024-11-01' },
-  { id: 2, document_type: 'utility_bill', file_name: 'nepa_bill.pdf', status: 'pending', created_at: '2024-12-01' },
-]
 
 export default function KYCUpload() {
-  const [documents, setDocuments] = useState(mockDocuments)
+  const [documents, setDocuments] = useState([])
+  const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [selectedType, setSelectedType] = useState('')
   const [dragOver, setDragOver] = useState(false)
   const toast = useToast()
+
+  // Fetch existing documents on mount
+  useEffect(() => {
+    const loadDocuments = async () => {
+      try {
+        const res = await kycAPI.getDocuments()
+        setDocuments(res.data || [])
+      } catch (err) {
+        console.error('Failed to load documents:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadDocuments()
+  }, [])
 
   const handleDragOver = useCallback((e) => { e.preventDefault(); setDragOver(true) }, [])
   const handleDragLeave = useCallback((e) => { e.preventDefault(); setDragOver(false) }, [])
@@ -29,16 +42,43 @@ export default function KYCUpload() {
     if (!selectedType) { toast.error('Please select a document type first'); return }
     if (!['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)) { toast.error('Only JPG, PNG, and PDF allowed'); return }
     if (file.size > 5 * 1024 * 1024) { toast.error('File size must be less than 5MB'); return }
+    
     setUploading(true)
-    await new Promise(r => setTimeout(r, 1500))
-    setDocuments(prev => [...prev, { id: Date.now(), document_type: selectedType, file_name: file.name, status: 'pending', created_at: new Date().toISOString().split('T')[0] }])
-    setSelectedType('')
-    toast.success('Document uploaded successfully!')
-    setUploading(false)
+    try {
+      const formData = new FormData()
+      formData.append('document_type', selectedType)
+      formData.append('file', file)
+      
+      const res = await kycAPI.uploadDocument(formData)
+      setDocuments(prev => [...prev, res.data.document])
+      setSelectedType('')
+      toast.success('Document uploaded successfully!')
+    } catch (err) {
+      const message = err.response?.data?.message || 'Failed to upload document'
+      toast.error(message)
+      console.error(err)
+    } finally {
+      setUploading(false)
+    }
   }
 
-  const getStatus = (s) => ({ pending: { icon: Clock, color: 'text-amber-600', badge: 'badge-warning' }, approved: { icon: CheckCircle2, color: 'text-primary-600', badge: 'badge-success' }, rejected: { icon: XCircle, color: 'text-red-600', badge: 'badge-error' } }[s])
+  const handleDelete = async (docId) => {
+    try {
+      await kycAPI.deleteDocument(docId)
+      setDocuments(prev => prev.filter(d => d.id !== docId))
+      toast.success('Document deleted')
+    } catch (err) {
+      toast.error('Failed to delete document')
+      console.error(err)
+    }
+  }
+
+  const getStatus = (s) => ({ pending: { icon: Clock, color: 'text-amber-600', badge: 'badge-warning' }, approved: { icon: CheckCircle2, color: 'text-primary-600', badge: 'badge-success' }, rejected: { icon: XCircle, color: 'text-red-600', badge: 'badge-error' } }[s] || { icon: Clock, color: 'text-amber-600', badge: 'badge-warning' })
   const kycProgress = Math.round((documents.filter(d => d.status === 'approved').length / documentTypes.length) * 100)
+
+  if (loading) {
+    return <CustomerLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-primary-600" size={32} /></div></CustomerLayout>
+  }
 
   return (
     <CustomerLayout>
@@ -80,14 +120,14 @@ export default function KYCUpload() {
             <label className="form-label">Document Type</label>
             <select className="form-input form-select" value={selectedType} onChange={e => setSelectedType(e.target.value)}>
               <option value="">Select document type</option>
-              {documentTypes.map(t => <option key={t.id} value={t.id} disabled={documents.some(d => d.document_type === t.id)}>{t.name} {documents.some(d => d.document_type === t.id) ? '(Already uploaded)' : ''}</option>)}
+              {documentTypes.map(t => <option key={t.id} value={t.id} disabled={documents.some(d => d.document_type === t.id && d.status !== 'rejected')}>{t.name} {documents.some(d => d.document_type === t.id && d.status !== 'rejected') ? '(Already uploaded)' : ''}</option>)}
             </select>
           </div>
           <div className={`border-2 border-dashed rounded-lg p-10 text-center transition-all ${dragOver ? 'border-primary-500 bg-primary-50' : selectedType ? 'border-border hover:border-primary-400' : 'border-border opacity-50'} ${!selectedType && 'cursor-not-allowed'}`}
             onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
             <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.pdf" onChange={e => e.target.files?.[0] && handleFileUpload(e.target.files[0])} disabled={!selectedType || uploading} className="hidden" />
             <label htmlFor="file-input" className={selectedType ? 'cursor-pointer' : 'cursor-not-allowed'}>
-              <Upload size={32} className="text-text-muted mx-auto mb-3" />
+              {uploading ? <Loader2 size={32} className="animate-spin text-primary-600 mx-auto mb-3" /> : <Upload size={32} className="text-text-muted mx-auto mb-3" />}
               <p className="font-medium text-text text-sm">{uploading ? 'Uploading...' : 'Drag & drop or click to upload'}</p>
               <p className="text-xs text-text-muted mt-1">JPG, PNG, PDF (max 5MB)</p>
               {!selectedType && <p className="text-xs text-amber-600 mt-2">Please select a document type first</p>}
@@ -108,9 +148,9 @@ export default function KYCUpload() {
                 return (
                   <div key={doc.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border text-sm">
                     <FileText size={18} className="text-text-muted" />
-                    <div className="flex-1 min-w-0"><p className="font-medium text-text">{dt?.name}</p><p className="text-xs text-text-muted truncate">{doc.file_name}</p></div>
+                    <div className="flex-1 min-w-0"><p className="font-medium text-text">{dt?.name || doc.document_type}</p><p className="text-xs text-text-muted truncate">{doc.file_name}</p></div>
                     <span className={`badge ${status.badge}`}>{doc.status}</span>
-                    {doc.status !== 'approved' && <button className="text-text-muted hover:text-red-600" onClick={() => setDocuments(p => p.filter(d => d.id !== doc.id))}><X size={16} /></button>}
+                    {doc.status !== 'approved' && <button className="text-text-muted hover:text-red-600" onClick={() => handleDelete(doc.id)}><X size={16} /></button>}
                   </div>
                 )
               })}
