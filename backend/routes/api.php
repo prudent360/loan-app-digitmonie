@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\KycController as AdminKycController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Customer\PaymentController;
+use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -100,6 +101,12 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/loans/{loan}/approve', [AdminLoanController::class, 'approve']);
             Route::post('/loans/{loan}/reject', [AdminLoanController::class, 'reject']);
             Route::post('/loans/{loan}/disburse', [AdminLoanController::class, 'disburse']);
+            Route::get('/loans/{loan}/repayments', [AdminPaymentController::class, 'getLoanRepayments']);
+        });
+
+        // Payments - require manage_loans permission
+        Route::middleware('permission:manage_loans')->group(function () {
+            Route::get('/payments', [AdminPaymentController::class, 'index']);
         });
 
         // KYC - require manage_kyc permission

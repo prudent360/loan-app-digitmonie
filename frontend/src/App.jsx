@@ -25,6 +25,7 @@ import AdminLoans from './pages/admin/Loans'
 import AdminKYC from './pages/admin/KYCReview'
 import AdminSettings from './pages/admin/Settings'
 import AdminRoles from './pages/admin/Roles'
+import AdminPayments from './pages/admin/Payments'
 
 // Protected Route Component
 function ProtectedRoute({ children, requiredRole }) {
@@ -92,6 +93,7 @@ function AppRoutes() {
       <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
       <Route path="/admin/loans" element={<ProtectedRoute requiredRole="admin"><AdminLoans /></ProtectedRoute>} />
       <Route path="/admin/kyc" element={<ProtectedRoute requiredRole="admin"><AdminKYC /></ProtectedRoute>} />
+      <Route path="/admin/payments" element={<ProtectedRoute requiredRole="admin"><AdminPayments /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
       <Route path="/admin/roles" element={<ProtectedRoute requiredRole="admin"><AdminRoles /></ProtectedRoute>} />
       
