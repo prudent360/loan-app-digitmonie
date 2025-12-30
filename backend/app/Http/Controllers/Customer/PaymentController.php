@@ -36,14 +36,26 @@ class PaymentController extends Controller
             'loan_id' => 'required|exists:loans,id',
             'repayment_id' => 'nullable|exists:repayments,id',
             'amount' => 'required|numeric|min:100',
+            'payment_type' => 'nullable|in:repayment,admin_fee',
         ]);
 
         $user = $request->user();
         $loan = Loan::findOrFail($request->loan_id);
+        $paymentType = $request->payment_type ?? 'repayment';
 
         // Ensure user owns this loan
-        if ($loan->user_id !== $user->id) {
+        if ((int)$loan->user_id !== (int)$user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // For admin fee payments, validate the fee hasn't been paid
+        if ($paymentType === 'admin_fee') {
+            if ($loan->admin_fee_paid) {
+                return response()->json(['message' => 'Admin fee already paid'], 400);
+            }
+            if ((float)$request->amount !== (float)$loan->admin_fee) {
+                return response()->json(['message' => 'Payment amount must match admin fee'], 400);
+            }
         }
 
         $settings = Setting::getValue('payment_gateways', []);
@@ -58,6 +70,7 @@ class PaymentController extends Controller
             'repayment_id' => $request->repayment_id,
             'amount' => $request->amount,
             'gateway' => $activeGateway,
+            'payment_type' => $paymentType,
             'reference' => $reference,
             'status' => 'pending',
         ]);
@@ -67,6 +80,7 @@ class PaymentController extends Controller
             'loan_id' => $loan->id,
             'repayment_id' => $request->repayment_id,
             'user_id' => $user->id,
+            'payment_type' => $paymentType,
         ];
 
         if ($activeGateway === 'paystack') {
@@ -178,6 +192,20 @@ class PaymentController extends Controller
             'paid_at' => now(),
         ]);
 
+        $loan = $payment->loan;
+
+        // Handle admin fee payment
+        if ($payment->payment_type === 'admin_fee') {
+            if ($loan) {
+                $loan->update([
+                    'admin_fee_paid' => true,
+                    'admin_fee_payment_id' => $payment->id,
+                    'status' => 'pending_review', // Ready for admin review
+                ]);
+            }
+            return;
+        }
+
         // If linked to a specific repayment, mark it as paid
         if ($payment->repayment_id) {
             $repayment = Repayment::find($payment->repayment_id);
@@ -191,7 +219,6 @@ class PaymentController extends Controller
         }
 
         // Update loan total_paid (if loan tracks this)
-        $loan = $payment->loan;
         if ($loan) {
             // Check if all repayments are paid
             $pendingCount = $loan->repayments()->where('status', 'pending')->count();

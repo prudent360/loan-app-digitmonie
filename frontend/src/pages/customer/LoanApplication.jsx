@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CustomerLayout from '../../components/layouts/CustomerLayout'
 import { useToast } from '../../context/ToastContext'
-import { loanSettingsAPI, loanAPI } from '../../services/api'
-import { ArrowLeft, ArrowRight, Calculator, CheckCircle2, Loader2 } from 'lucide-react'
+import { loanSettingsAPI, loanAPI, paymentAPI } from '../../services/api'
+import { ArrowLeft, ArrowRight, Calculator, CheckCircle2, Loader2, CreditCard } from 'lucide-react'
 
 const loanPurposes = ['Business Expansion', 'Education', 'Medical Emergency', 'Home Renovation', 'Vehicle Purchase', 'Debt Consolidation', 'Personal', 'Other']
 
@@ -13,6 +13,8 @@ export default function LoanApplication() {
   const [settingsLoading, setSettingsLoading] = useState(true)
   const [settings, setSettings] = useState({ min_amount: 50000, max_amount: 5000000, min_tenure: 3, max_tenure: 36, default_interest_rate: 15, admin_fee: 2 })
   const [formData, setFormData] = useState({ amount: 500000, tenure_months: 12, purpose: '', purpose_details: '', employment_type: '', monthly_income: '', bank_name: '', account_number: '' })
+  const [createdLoan, setCreatedLoan] = useState(null)
+  const [payingFee, setPayingFee] = useState(false)
   
   const toast = useToast()
   const navigate = useNavigate()
@@ -59,15 +61,46 @@ export default function LoanApplication() {
         bank_name: formData.bank_name,
         account_number: formData.account_number,
       }
-      await loanAPI.apply(loanData)
-      toast.success('Loan application submitted successfully!')
-      setStep(4)
+      const res = await loanAPI.apply(loanData)
+      const loan = res.data.loan
+      setCreatedLoan(loan)
+      
+      // If admin fee is required and not paid, go to payment step
+      if (loan.admin_fee > 0 && !loan.admin_fee_paid) {
+        toast.success('Loan submitted! Please pay the admin fee to complete.')
+        setStep(4) // Admin fee payment step
+      } else {
+        toast.success('Loan application submitted successfully!')
+        setStep(5) // Success step
+      }
     } catch (err) {
       const message = err.response?.data?.message || 'Failed to submit loan application'
       toast.error(message)
       console.error(err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePayAdminFee = async () => {
+    if (!createdLoan) return
+    setPayingFee(true)
+    try {
+      const res = await paymentAPI.initialize({
+        loan_id: createdLoan.id,
+        amount: createdLoan.admin_fee,
+        payment_type: 'admin_fee',
+      })
+      if (res.data.authorization_url) {
+        window.location.href = res.data.authorization_url
+      } else {
+        toast.error('Failed to initialize payment')
+      }
+    } catch (err) {
+      const message = err.response?.data?.message || 'Payment initialization failed'
+      toast.error(message)
+    } finally {
+      setPayingFee(false)
     }
   }
 
@@ -231,8 +264,33 @@ export default function LoanApplication() {
           </div>
         )}
 
-        {/* Step 4 - Success */}
-        {step === 4 && (
+        {/* Step 4 - Admin Fee Payment */}
+        {step === 4 && createdLoan && (
+          <div className="card text-center py-12">
+            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CreditCard size={32} className="text-amber-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-text mb-2">Pay Admin Fee</h2>
+            <p className="text-text-muted mb-6 max-w-sm mx-auto">Your loan application has been submitted. Please pay the admin fee to complete your application.</p>
+            
+            <div className="bg-muted rounded-lg p-6 mb-8 max-w-xs mx-auto">
+              <p className="text-text-muted text-sm mb-2">Admin Fee</p>
+              <p className="text-3xl font-bold text-amber-600">{formatCurrency(createdLoan.admin_fee)}</p>
+              <p className="text-xs text-text-muted mt-2">for Loan #{createdLoan.id}</p>
+            </div>
+            
+            <div className="flex flex-col gap-3 max-w-xs mx-auto">
+              <button className="btn btn-primary w-full" onClick={handlePayAdminFee} disabled={payingFee}>
+                {payingFee ? <><Loader2 size={16} className="animate-spin" /> Processing...</> : 'Pay Admin Fee'}
+              </button>
+              <button className="btn btn-outline w-full" onClick={() => navigate('/loans')}>Pay Later</button>
+            </div>
+            <p className="text-xs text-text-muted mt-4">You can also pay from the loan details page later.</p>
+          </div>
+        )}
+
+        {/* Step 5 - Success */}
+        {step === 5 && (
           <div className="card text-center py-12">
             <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 size={32} className="text-primary-600" />
@@ -240,7 +298,7 @@ export default function LoanApplication() {
             <h2 className="text-xl font-semibold text-text mb-2">Application Submitted!</h2>
             <p className="text-text-muted mb-8 max-w-sm mx-auto">Your loan application has been submitted. We'll review it and get back to you within 24 hours.</p>
             <div className="flex justify-center gap-8 mb-8 text-sm">
-              <div><span className="text-text-muted">Application ID</span><p className="font-semibold text-text">#{Date.now().toString().slice(-8)}</p></div>
+              <div><span className="text-text-muted">Application ID</span><p className="font-semibold text-text">#{createdLoan?.id || Date.now().toString().slice(-8)}</p></div>
               <div><span className="text-text-muted">Amount</span><p className="font-semibold text-text">{formatCurrency(formData.amount)}</p></div>
             </div>
             <button className="btn btn-primary" onClick={() => navigate('/loans')}>View My Loans</button>

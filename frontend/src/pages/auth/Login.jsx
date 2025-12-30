@@ -19,9 +19,14 @@ export default function Login() {
     if (!formData.email || !formData.password) { toast.error('Please fill in all fields'); return }
     setLoading(true)
     try {
-      await login(formData)
+      const user = await login(formData)
       toast.success('Login successful!')
-      navigate('/dashboard')
+      // Redirect based on role
+      if (user.role === 'admin') {
+        navigate('/admin')
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid credentials')
     } finally {
@@ -77,7 +82,7 @@ export default function Login() {
           </p>
         </div>
 
-        <p className="text-center text-text-muted text-xs mt-8">© 2024 DigitMonie. All rights reserved.</p>
+        <p className="text-center text-text-muted text-xs mt-8">© {new Date().getFullYear()} DigitMonie. All rights reserved.</p>
       </div>
     </div>
   )

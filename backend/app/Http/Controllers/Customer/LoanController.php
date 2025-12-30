@@ -21,6 +21,8 @@ class LoanController extends Controller
                     'id' => $loan->id,
                     'amount' => $loan->amount,
                     'interest_rate' => $loan->interest_rate,
+                    'admin_fee' => round($loan->admin_fee, 2),
+                    'admin_fee_paid' => $loan->admin_fee_paid,
                     'tenure_months' => $loan->tenure_months,
                     'purpose' => $loan->purpose,
                     'status' => $loan->status,
@@ -47,6 +49,8 @@ class LoanController extends Controller
             'id' => $loan->id,
             'amount' => $loan->amount,
             'interest_rate' => $loan->interest_rate,
+            'admin_fee' => round($loan->admin_fee, 2),
+            'admin_fee_paid' => $loan->admin_fee_paid,
             'tenure_months' => $loan->tenure_months,
             'purpose' => $loan->purpose,
             'purpose_details' => $loan->purpose_details,
@@ -73,6 +77,7 @@ class LoanController extends Controller
             'min_tenure' => 3,
             'max_tenure' => 36,
             'default_interest_rate' => 15,
+            'admin_fee' => 0,
         ]);
 
         $request->validate([
@@ -86,10 +91,16 @@ class LoanController extends Controller
             'account_number' => 'required|string|size:10',
         ]);
 
+        // Calculate admin fee amount
+        $adminFeePercent = $loanSettings['admin_fee'] ?? 0;
+        $adminFeeAmount = ($request->amount * $adminFeePercent) / 100;
+
         $loan = Loan::create([
             'user_id' => $request->user()->id,
             'amount' => $request->amount,
             'interest_rate' => $loanSettings['default_interest_rate'],
+            'admin_fee' => $adminFeeAmount,
+            'admin_fee_paid' => $adminFeeAmount == 0, // If no fee, mark as paid
             'tenure_months' => $request->tenure_months,
             'purpose' => $request->purpose,
             'purpose_details' => $request->purpose_details,
@@ -102,7 +113,13 @@ class LoanController extends Controller
 
         return response()->json([
             'message' => 'Loan application submitted successfully',
-            'loan' => $loan,
+            'loan' => [
+                'id' => $loan->id,
+                'amount' => $loan->amount,
+                'admin_fee' => $loan->admin_fee,
+                'admin_fee_paid' => $loan->admin_fee_paid,
+                'status' => $loan->status,
+            ],
         ], 201);
     }
 

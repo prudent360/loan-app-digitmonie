@@ -63,7 +63,7 @@ export default function ForgotPassword() {
           )}
         </div>
 
-        <p className="text-center text-text-muted text-xs mt-8">© 2024 DigitMonie. All rights reserved.</p>
+        <p className="text-center text-text-muted text-xs mt-8">© {new Date().getFullYear()} DigitMonie. All rights reserved.</p>
       </div>
     </div>
   )

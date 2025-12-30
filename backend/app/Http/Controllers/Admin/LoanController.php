@@ -37,8 +37,14 @@ class LoanController extends Controller
 
     public function approve(Request $request, Loan $loan)
     {
-        if ($loan->status !== 'pending') {
+        // Allow approval from pending (zero fee) or pending_review (fee paid)
+        if (!in_array($loan->status, ['pending', 'pending_review'])) {
             return response()->json(['message' => 'Loan cannot be approved'], 422);
+        }
+
+        // Check if admin fee is required and paid
+        if ($loan->admin_fee > 0 && !$loan->admin_fee_paid) {
+            return response()->json(['message' => 'Admin fee must be paid before approval'], 422);
         }
 
         $loan->update([
@@ -59,7 +65,7 @@ class LoanController extends Controller
             'reason' => 'required|string|max:500',
         ]);
 
-        if ($loan->status !== 'pending') {
+        if (!in_array($loan->status, ['pending', 'pending_review'])) {
             return response()->json(['message' => 'Loan cannot be rejected'], 422);
         }
 

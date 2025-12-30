@@ -15,6 +15,7 @@ class Payment extends Model
         'repayment_id',
         'amount',
         'gateway',
+        'payment_type',
         'reference',
         'gateway_reference',
         'status',

@@ -13,6 +13,9 @@ class Loan extends Model
         'user_id',
         'amount',
         'interest_rate',
+        'admin_fee',
+        'admin_fee_paid',
+        'admin_fee_payment_id',
         'tenure_months',
         'purpose',
         'purpose_details',
@@ -30,6 +33,8 @@ class Loan extends Model
     protected $casts = [
         'amount' => 'decimal:2',
         'interest_rate' => 'decimal:2',
+        'admin_fee' => 'decimal:2',
+        'admin_fee_paid' => 'boolean',
         'monthly_income' => 'decimal:2',
         'approved_at' => 'datetime',
         'disbursed_at' => 'datetime',

@@ -12,22 +12,33 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('token')
     const storedUser = localStorage.getItem('user')
     
-    if (token && storedUser) {
-      setUser(JSON.parse(storedUser))
-      // Validate token with backend
-      authAPI.getUser()
-        .then(res => {
-          setUser(res.data.user)
-          localStorage.setItem('user', JSON.stringify(res.data.user))
-        })
-        .catch(() => {
-          // Token invalid
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
-          setUser(null)
-        })
-        .finally(() => setLoading(false))
+    if (token && storedUser && storedUser !== 'undefined') {
+      try {
+        setUser(JSON.parse(storedUser))
+        // Validate token with backend
+        authAPI.getUser()
+          .then(res => {
+            setUser(res.data.user)
+            localStorage.setItem('user', JSON.stringify(res.data.user))
+          })
+          .catch(() => {
+            // Token invalid
+            localStorage.removeItem('token')
+            localStorage.removeItem('user')
+            setUser(null)
+          })
+          .finally(() => setLoading(false))
+      } catch (e) {
+        // Invalid JSON in localStorage
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        setLoading(false)
+      }
     } else {
+      // Clean up any invalid values
+      if (storedUser === 'undefined') {
+        localStorage.removeItem('user')
+      }
       setLoading(false)
     }
   }, [])

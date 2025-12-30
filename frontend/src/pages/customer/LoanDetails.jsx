@@ -93,6 +93,28 @@ export default function LoanDetails() {
     setShowPaymentModal(true)
   }
 
+  const handlePayAdminFee = async () => {
+    if (!loan) return
+    setProcessingPayment(true)
+    try {
+      const res = await paymentAPI.initialize({
+        loan_id: loan.id,
+        amount: loan.admin_fee,
+        payment_type: 'admin_fee',
+      })
+      if (res.data.authorization_url) {
+        window.location.href = res.data.authorization_url
+      } else {
+        toast.error('Failed to initialize payment')
+      }
+    } catch (err) {
+      const message = err.response?.data?.message || 'Payment initialization failed'
+      toast.error(message)
+    } finally {
+      setProcessingPayment(false)
+    }
+  }
+
   const downloadSchedule = () => {
     if (!loan || repayments.length === 0) return
     const headers = ['EMI #', 'Due Date', 'Amount', 'Status', 'Paid On']
@@ -121,7 +143,7 @@ export default function LoanDetails() {
 
   const formatCurrency = (amount) => `₦${Number(amount).toLocaleString()}`
   const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '-'
-  const getStatusBadge = (s) => `badge ${({ pending: 'badge-warning', paid: 'badge-success', active: 'badge-success', approved: 'badge-success', disbursed: 'badge-info', overdue: 'badge-error', rejected: 'badge-error', completed: 'badge-info' }[s] || 'badge-info')}`
+  const getStatusBadge = (s) => `badge ${({ pending: 'badge-warning', pending_review: 'badge-info', paid: 'badge-success', active: 'badge-success', approved: 'badge-success', disbursed: 'badge-info', overdue: 'badge-error', rejected: 'badge-error', completed: 'badge-info' }[s] || 'badge-info')}`
 
   if (loading) {
     return <CustomerLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-primary-600" size={32} /></div></CustomerLayout>
@@ -150,6 +172,26 @@ export default function LoanDetails() {
             <span className={getStatusBadge(loan.status)}>{loan.status}</span>
           </div>
         </div>
+
+        {/* Admin Fee Alert */}
+        {loan.admin_fee > 0 && !loan.admin_fee_paid && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex items-center gap-4">
+            <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <CreditCard size={24} className="text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-medium text-amber-900">Admin Fee Required</h3>
+              <p className="text-amber-800 text-sm">Pay the admin fee of <strong>{formatCurrency(loan.admin_fee)}</strong> to submit your application for review.</p>
+            </div>
+            <button 
+              className="btn btn-primary flex-shrink-0" 
+              onClick={handlePayAdminFee}
+              disabled={processingPayment}
+            >
+              {processingPayment ? <><Loader2 size={16} className="animate-spin" /> Processing...</> : 'Pay Now'}
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {/* Loan Overview */}

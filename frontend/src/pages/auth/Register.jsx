@@ -76,7 +76,7 @@ export default function Register() {
           <p className="text-center text-text-muted text-sm mt-6">Already have an account? <Link to="/login" className="text-primary-600 hover:underline font-medium">Sign in</Link></p>
         </div>
 
-        <p className="text-center text-text-muted text-xs mt-8">© 2024 DigitMonie. All rights reserved.</p>
+        <p className="text-center text-text-muted text-xs mt-8">© {new Date().getFullYear()} DigitMonie. All rights reserved.</p>
       </div>
     </div>
   )
