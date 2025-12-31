@@ -48,6 +48,11 @@ class User extends Authenticatable
         return $this->hasMany(KycDocument::class);
     }
 
+    public function wallet()
+    {
+        return $this->hasOne(Wallet::class);
+    }
+
     // Role-based access control
     public function roles(): BelongsToMany
     {
