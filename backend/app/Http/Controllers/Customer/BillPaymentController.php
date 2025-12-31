@@ -217,14 +217,29 @@ class BillPaymentController extends Controller
 
         try {
             // Call Flutterwave to process the bill
-            $response = $this->flutterwave->payBill([
-                'country' => 'NG',
-                'customer_id' => $request->customer_id,
-                'amount' => $request->amount,
-                'type' => strtoupper($request->type),
-                'reference' => $reference,
-                'biller_name' => $request->biller_name,
-            ]);
+            // SIMULATION: If in test mode, mock success
+            if (!$this->flutterwave->isLiveMode()) {
+                $response = [
+                    'status' => 'success',
+                    'message' => 'Bill payment successful (Test Mode)',
+                    'data' => [
+                        'flw_ref' => 'TEST-' . $reference,
+                        'token' => 'TEST-TOKEN-' . rand(1000, 9999), 
+                        'recharge_token' => 'TEST-recharge-' . rand(1000, 9999),
+                        'amount' => $request->amount,
+                        'phone_number' => $request->customer_id
+                    ]
+                ];
+            } else {
+                $response = $this->flutterwave->payBill([
+                    'country' => 'NG',
+                    'customer_id' => $request->customer_id,
+                    'amount' => $request->amount,
+                    'type' => strtoupper($request->type),
+                    'reference' => $reference,
+                    'biller_name' => $request->biller_name,
+                ]);
+            }
 
             if ($response['status'] === 'success') {
                 // Debit wallet
