@@ -126,8 +126,8 @@ class WalletController extends Controller
         $amount = (float) $request->amount;
         $reference = 'WFUND-' . strtoupper(uniqid()) . '-' . time();
 
-        // Use the frontend callback URL
-        $callbackUrl = config('app.frontend_url', 'http://localhost:3000') . '/wallet/callback';
+        // Use the frontend callback URL - redirect back to wallet page
+        $callbackUrl = config('app.frontend_url', 'http://localhost:3000') . '/wallet';
 
         try {
             $response = $this->flutterwaveService->initializeTransaction(
