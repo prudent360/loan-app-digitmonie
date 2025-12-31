@@ -123,5 +123,27 @@ export const paymentAPI = {
   getHistory: () => api.get('/customer/payments/history'),
 }
 
+// Virtual Cards APIs
+export const virtualCardAPI = {
+  getAll: () => api.get('/customer/cards'),
+  getOne: (id) => api.get(`/customer/cards/${id}`),
+  create: (data) => api.post('/customer/cards', data),
+  fund: (id, amount) => api.post(`/customer/cards/${id}/fund`, { amount }),
+  withdraw: (id, amount) => api.post(`/customer/cards/${id}/withdraw`, { amount }),
+  toggleBlock: (id, action) => api.post(`/customer/cards/${id}/block`, { action }),
+  terminate: (id) => api.delete(`/customer/cards/${id}`),
+}
+
+// Bill Payments APIs
+export const billPaymentAPI = {
+  getCategories: () => api.get('/customer/bills/categories'),
+  getBillers: (category, country = 'NG') => api.get('/customer/bills/billers', { params: { category, country } }),
+  getItems: (billerCode) => api.get('/customer/bills/items', { params: { biller_code: billerCode } }),
+  validateCustomer: (data) => api.post('/customer/bills/validate', data),
+  pay: (data) => api.post('/customer/bills/pay', data),
+  getHistory: (params) => api.get('/customer/bills/history', { params }),
+  getTransaction: (id) => api.get(`/customer/bills/${id}`),
+}
+
 export default api
 

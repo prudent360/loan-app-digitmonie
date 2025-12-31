@@ -8,7 +8,6 @@ import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import ForgotPassword from './pages/auth/ForgotPassword'
 
-// Customer Pages
 import CustomerDashboard from './pages/customer/Dashboard'
 import CustomerLoans from './pages/customer/Loans'
 import LoanApplication from './pages/customer/LoanApplication'
@@ -17,6 +16,8 @@ import KYCUpload from './pages/customer/KYCUpload'
 import Profile from './pages/customer/Profile'
 import PaymentCallback from './pages/customer/PaymentCallback'
 import PaymentHistory from './pages/customer/PaymentHistory'
+import VirtualCards from './pages/customer/VirtualCards'
+import BillPayments from './pages/customer/BillPayments'
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -87,6 +88,8 @@ function AppRoutes() {
       <Route path="/profile" element={<ProtectedRoute requiredRole="customer"><Profile /></ProtectedRoute>} />
       <Route path="/payments" element={<ProtectedRoute requiredRole="customer"><PaymentHistory /></ProtectedRoute>} />
       <Route path="/payment/callback" element={<ProtectedRoute requiredRole="customer"><PaymentCallback /></ProtectedRoute>} />
+      <Route path="/cards" element={<ProtectedRoute requiredRole="customer"><VirtualCards /></ProtectedRoute>} />
+      <Route path="/bills" element={<ProtectedRoute requiredRole="customer"><BillPayments /></ProtectedRoute>} />
       
       {/* Admin Routes */}
       <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />

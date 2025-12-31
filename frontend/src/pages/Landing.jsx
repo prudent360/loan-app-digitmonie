@@ -67,46 +67,46 @@ export default function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="relative pt-32 pb-24 px-6 overflow-hidden">
-        {/* Animated Background Gradient Orbs */}
+      <section className="relative pt-32 pb-24 px-6 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-primary-900">
+        {/* Dark Animated Background Gradient Orbs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-primary-400/30 to-primary-600/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-purple-400/20 to-primary-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-primary-200/10 via-transparent to-purple-200/10 rounded-full blur-3xl"></div>
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-primary-500/20 to-primary-700/30 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-purple-500/20 to-primary-600/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-primary-500/10 via-transparent to-purple-500/10 rounded-full blur-3xl"></div>
         </div>
 
         {/* Floating Decorative Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-32 left-[10%] w-2 h-2 bg-primary-400 rounded-full animate-bounce" style={{ animationDuration: '3s' }}></div>
-          <div className="absolute top-48 right-[15%] w-3 h-3 bg-purple-400 rounded-full animate-bounce" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}></div>
-          <div className="absolute bottom-32 left-[20%] w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDuration: '2s', animationDelay: '1s' }}></div>
-          <div className="absolute bottom-48 right-[25%] w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDuration: '3.5s', animationDelay: '0.3s' }}></div>
+          <div className="absolute top-32 left-[10%] w-2 h-2 bg-primary-400/60 rounded-full animate-bounce" style={{ animationDuration: '3s' }}></div>
+          <div className="absolute top-48 right-[15%] w-3 h-3 bg-purple-400/60 rounded-full animate-bounce" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}></div>
+          <div className="absolute bottom-32 left-[20%] w-2 h-2 bg-primary-500/60 rounded-full animate-bounce" style={{ animationDuration: '2s', animationDelay: '1s' }}></div>
+          <div className="absolute bottom-48 right-[25%] w-1.5 h-1.5 bg-purple-500/60 rounded-full animate-bounce" style={{ animationDuration: '3.5s', animationDelay: '0.3s' }}></div>
         </div>
 
         <div className="relative max-w-4xl mx-auto text-center">
-          {/* Premium Badge with Glassmorphism */}
+          {/* Premium Badge with Glassmorphism - Dark Theme */}
           <div 
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-md border border-primary-200/50 rounded-full text-primary-600 text-sm font-medium mb-8 shadow-lg shadow-primary-500/10 hover:shadow-xl hover:shadow-primary-500/20 transition-all duration-300 cursor-default opacity-0 animate-[slideInUp_0.6s_ease-out_0.1s_forwards]"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-primary-300 text-sm font-medium mb-8 shadow-lg shadow-black/20 hover:bg-white/15 transition-all duration-300 cursor-default opacity-0 animate-[slideInUp_0.6s_ease-out_0.1s_forwards]"
           >
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-400"></span>
             </span>
             <Sparkles size={14} className="animate-pulse" /> 
             Your All-in-One Financial Partner
           </div>
 
           {/* Main Headline with Gradient Text */}
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-text mb-6 leading-[1.1] tracking-tight opacity-0 animate-[slideInUp_0.8s_ease-out_0.2s_forwards]">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-[1.1] tracking-tight opacity-0 animate-[slideInUp_0.8s_ease-out_0.2s_forwards]">
             Smart Money for a{' '}
             <span className="relative inline-block">
-              <span className="bg-gradient-to-r from-primary-500 via-primary-600 to-purple-600 bg-clip-text text-transparent bg-[length:200%_auto] animate-[gradient_3s_linear_infinite]">Smarter Life</span>
+              <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-purple-400 bg-clip-text text-transparent bg-[length:200%_auto] animate-[gradient_3s_linear_infinite]">Smarter Life</span>
               <svg className="absolute -bottom-2 left-0 w-full opacity-0 animate-[fadeIn_0.5s_ease-out_1s_forwards]" viewBox="0 0 200 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M2 8C50 2 150 2 198 8" stroke="url(#gradient)" strokeWidth="3" strokeLinecap="round" className="animate-[dash_1.5s_ease-out_1s_forwards]" strokeDasharray="200" strokeDashoffset="200" style={{ animation: 'dash 1.5s ease-out 1s forwards' }}/>
                 <defs>
                   <linearGradient id="gradient" x1="0" y1="0" x2="200" y2="0">
-                    <stop stopColor="#3b82f6"/>
-                    <stop offset="1" stopColor="#8b5cf6"/>
+                    <stop stopColor="#60a5fa"/>
+                    <stop offset="1" stopColor="#a78bfa"/>
                   </linearGradient>
                 </defs>
               </svg>
@@ -114,16 +114,16 @@ export default function Landing() {
           </h1>
 
           {/* Subtitle with Better Typography */}
-          <p className="text-lg md:text-xl text-text-muted mb-10 max-w-2xl mx-auto leading-relaxed opacity-0 animate-[slideInUp_0.8s_ease-out_0.4s_forwards]">
+          <p className="text-lg md:text-xl text-gray-300 mb-10 max-w-2xl mx-auto leading-relaxed opacity-0 animate-[slideInUp_0.8s_ease-out_0.4s_forwards]">
             Loans, virtual cards, bill payments, and automated savings — all in one place. 
-            <span className="text-text font-medium"> Take control of your finances</span> with DigitMonie.
+            <span className="text-white font-medium"> Take control of your finances</span> with DigitMonie.
           </p>
 
           {/* CTA Buttons with Enhanced Styling */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 opacity-0 animate-[slideInUp_0.8s_ease-out_0.6s_forwards]">
             <Link 
               to="/register" 
-              className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold px-8 py-4 rounded-xl shadow-lg shadow-primary-600/30 hover:shadow-xl hover:shadow-primary-600/40 hover:scale-[1.02] transition-all duration-300 animate-[glow_2s_ease-in-out_infinite_1.5s]"
+              className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold px-8 py-4 rounded-xl shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-[1.02] transition-all duration-300 animate-[glow_2s_ease-in-out_infinite_1.5s]"
             >
               Get Started Free 
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform duration-300" />
@@ -131,27 +131,27 @@ export default function Landing() {
             </Link>
             <a 
               href="#services" 
-              className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-border text-text font-semibold px-8 py-4 rounded-xl hover:bg-white hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+              className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-semibold px-8 py-4 rounded-xl hover:bg-white/20 hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
             >
               Explore Services
             </a>
           </div>
 
-          {/* Stats Section with Glass Cards */}
+          {/* Stats Section with Glass Cards - Dark Theme */}
           <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
-            <div className="group bg-white/60 backdrop-blur-sm border border-white/50 rounded-2xl px-6 py-4 shadow-lg hover:shadow-xl hover:bg-white/80 transition-all duration-300 opacity-0 animate-[scaleIn_0.6s_ease-out_0.8s_forwards] hover:-translate-y-1">
-              <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">₦5B+</p>
-              <p className="text-sm text-text-muted font-medium">Transactions Processed</p>
+            <div className="group bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4 shadow-lg hover:shadow-xl hover:bg-white/15 transition-all duration-300 opacity-0 animate-[scaleIn_0.6s_ease-out_0.8s_forwards] hover:-translate-y-1">
+              <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-400 to-primary-300 bg-clip-text text-transparent">₦5B+</p>
+              <p className="text-sm text-gray-400 font-medium">Transactions Processed</p>
             </div>
-            <div className="hidden md:block w-px h-16 bg-gradient-to-b from-transparent via-border to-transparent opacity-0 animate-[fadeIn_0.5s_ease-out_1s_forwards]"></div>
-            <div className="group bg-white/60 backdrop-blur-sm border border-white/50 rounded-2xl px-6 py-4 shadow-lg hover:shadow-xl hover:bg-white/80 transition-all duration-300 opacity-0 animate-[scaleIn_0.6s_ease-out_0.9s_forwards] hover:-translate-y-1">
-              <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent">100K+</p>
-              <p className="text-sm text-text-muted font-medium">Happy Users</p>
+            <div className="hidden md:block w-px h-16 bg-gradient-to-b from-transparent via-white/20 to-transparent opacity-0 animate-[fadeIn_0.5s_ease-out_1s_forwards]"></div>
+            <div className="group bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4 shadow-lg hover:shadow-xl hover:bg-white/15 transition-all duration-300 opacity-0 animate-[scaleIn_0.6s_ease-out_0.9s_forwards] hover:-translate-y-1">
+              <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-400 to-purple-400 bg-clip-text text-transparent">100K+</p>
+              <p className="text-sm text-gray-400 font-medium">Happy Users</p>
             </div>
-            <div className="hidden md:block w-px h-16 bg-gradient-to-b from-transparent via-border to-transparent opacity-0 animate-[fadeIn_0.5s_ease-out_1.1s_forwards]"></div>
-            <div className="group bg-white/60 backdrop-blur-sm border border-white/50 rounded-2xl px-6 py-4 shadow-lg hover:shadow-xl hover:bg-white/80 transition-all duration-300 opacity-0 animate-[scaleIn_0.6s_ease-out_1s_forwards] hover:-translate-y-1">
-              <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-600 to-primary-600 bg-clip-text text-transparent">99.9%</p>
-              <p className="text-sm text-text-muted font-medium">Uptime Guarantee</p>
+            <div className="hidden md:block w-px h-16 bg-gradient-to-b from-transparent via-white/20 to-transparent opacity-0 animate-[fadeIn_0.5s_ease-out_1.1s_forwards]"></div>
+            <div className="group bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4 shadow-lg hover:shadow-xl hover:bg-white/15 transition-all duration-300 opacity-0 animate-[scaleIn_0.6s_ease-out_1s_forwards] hover:-translate-y-1">
+              <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-primary-400 bg-clip-text text-transparent">99.9%</p>
+              <p className="text-sm text-gray-400 font-medium">Uptime Guarantee</p>
             </div>
           </div>
         </div>

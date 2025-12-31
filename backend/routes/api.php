@@ -14,6 +14,8 @@ use App\Http\Controllers\Admin\KycController as AdminKycController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Customer\PaymentController;
+use App\Http\Controllers\Customer\VirtualCardController;
+use App\Http\Controllers\Customer\BillPaymentController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 
 /*
@@ -70,6 +72,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/payments/initialize', [PaymentController::class, 'initializePayment']);
         Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']);
         Route::get('/payments/history', [PaymentController::class, 'getPaymentHistory']);
+
+        // Virtual Cards
+        Route::get('/cards', [VirtualCardController::class, 'index']);
+        Route::post('/cards', [VirtualCardController::class, 'store']);
+        Route::get('/cards/{id}', [VirtualCardController::class, 'show']);
+        Route::post('/cards/{id}/fund', [VirtualCardController::class, 'fund']);
+        Route::post('/cards/{id}/withdraw', [VirtualCardController::class, 'withdraw']);
+        Route::post('/cards/{id}/block', [VirtualCardController::class, 'toggleBlock']);
+        Route::delete('/cards/{id}', [VirtualCardController::class, 'terminate']);
+
+        // Bill Payments
+        Route::get('/bills/categories', [BillPaymentController::class, 'categories']);
+        Route::get('/bills/billers', [BillPaymentController::class, 'billers']);
+        Route::get('/bills/items', [BillPaymentController::class, 'items']);
+        Route::post('/bills/validate', [BillPaymentController::class, 'validateCustomer']);
+        Route::post('/bills/pay', [BillPaymentController::class, 'pay']);
+        Route::get('/bills/history', [BillPaymentController::class, 'history']);
+        Route::get('/bills/{id}', [BillPaymentController::class, 'show']);
     });
 
     // Admin routes - require any admin role
