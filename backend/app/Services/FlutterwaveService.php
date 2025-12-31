@@ -292,20 +292,48 @@ class FlutterwaveService
      */
     public function payBill($data)
     {
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->secretKey,
-            'Content-Type' => 'application/json',
-        ])->post($this->baseUrl . '/bills', [
+        // For Nigerian airtime/data, the biller_name must match exactly
+        $payload = [
             'country' => $data['country'] ?? 'NG',
             'customer' => $data['customer_id'],
             'amount' => $data['amount'],
             'recurrence' => $data['recurrence'] ?? 'ONCE',
             'type' => $data['type'],
             'reference' => $data['reference'],
-            'biller_name' => $data['biller_name'] ?? null,
-        ]);
+        ];
+
+        // Add biller_name for data bundles and specific services
+        if (!empty($data['biller_name'])) {
+            $payload['biller_name'] = $data['biller_name'];
+        }
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $this->secretKey,
+            'Content-Type' => 'application/json',
+        ])->post($this->baseUrl . '/bills', $payload);
 
         return $response->json();
+    }
+
+    /**
+     * Get Nigerian biller codes - these are the working codes for Nigeria
+     */
+    public static function getNigerianBillerCodes()
+    {
+        return [
+            'airtime' => [
+                'MTN' => 'BIL099',
+                'AIRTEL' => 'BIL100',
+                'GLO' => 'BIL102',
+                '9MOBILE' => 'BIL103',
+            ],
+            'data' => [
+                'MTN' => 'BIL108',
+                'AIRTEL' => 'BIL110',
+                'GLO' => 'BIL109',
+                '9MOBILE' => 'BIL111',
+            ],
+        ];
     }
 
     /**

@@ -11,6 +11,22 @@ const CATEGORIES = [
   { id: 'INTERNET', label: 'Internet', icon: Globe, color: 'bg-cyan-100 text-cyan-600' },
 ]
 
+// Nigerian Telecom Providers with Flutterwave biller codes
+const NIGERIAN_TELECOMS = {
+  AIRTIME: [
+    { biller_code: 'BIL099', name: 'MTN Nigeria', biller_name: 'MTN' },
+    { biller_code: 'BIL100', name: 'Airtel Nigeria', biller_name: 'AIRTEL' },
+    { biller_code: 'BIL102', name: 'Glo Nigeria', biller_name: 'GLO' },
+    { biller_code: 'BIL103', name: '9mobile Nigeria', biller_name: '9MOBILE' },
+  ],
+  DATA_BUNDLE: [
+    { biller_code: 'BIL108', name: 'MTN Data', biller_name: 'MTN' },
+    { biller_code: 'BIL110', name: 'Airtel Data', biller_name: 'AIRTEL' },
+    { biller_code: 'BIL109', name: 'Glo Data', biller_name: 'GLO' },
+    { biller_code: 'BIL111', name: '9mobile Data', biller_name: '9MOBILE' },
+  ],
+}
+
 export default function BillPayments() {
   const [activeTab, setActiveTab] = useState('pay') // 'pay' or 'history'
   const [step, setStep] = useState(1) // 1: category, 2: biller, 3: details, 4: confirm, 5: success
@@ -58,10 +74,18 @@ export default function BillPayments() {
   const handleCategorySelect = async (category) => {
     setSelectedCategory(category)
     setLoading(true)
+    
     try {
-      const res = await billPaymentAPI.getBillers(category.id)
-      setBillers(res.data.billers || [])
-      setStep(2)
+      // For Airtime and Data, use our hardcoded Nigerian telecoms
+      if (category.id === 'AIRTIME' || category.id === 'DATA_BUNDLE') {
+        setBillers(NIGERIAN_TELECOMS[category.id] || [])
+        setStep(2)
+      } else {
+        // For other categories, fetch from API
+        const res = await billPaymentAPI.getBillers(category.id)
+        setBillers(res.data.billers || [])
+        setStep(2)
+      }
     } catch (err) {
       console.error('Failed to load billers:', err)
       alert('Failed to load billers. Please try again.')
