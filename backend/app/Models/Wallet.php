@@ -74,7 +74,7 @@ class Wallet extends Model
     /**
      * Credit the wallet
      */
-    public function credit(float $amount, string $description, string $category = null, string $source = null, string $sourceRef = null, array $metadata = []): WalletTransaction
+    public function credit(float $amount, string $description, ?string $category = null, ?string $source = null, ?string $sourceRef = null, array $metadata = []): WalletTransaction
     {
         $balanceBefore = $this->balance;
         $this->increment('balance', $amount);
@@ -98,7 +98,7 @@ class Wallet extends Model
     /**
      * Debit the wallet
      */
-    public function debit(float $amount, string $description, string $category = null, string $source = null, string $sourceRef = null, array $metadata = []): WalletTransaction
+    public function debit(float $amount, string $description, ?string $category = null, ?string $source = null, ?string $sourceRef = null, array $metadata = []): WalletTransaction
     {
         if (!$this->canDebit($amount)) {
             throw new \Exception('Insufficient wallet balance or wallet is locked');
