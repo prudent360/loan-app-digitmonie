@@ -10,12 +10,33 @@ class FlutterwaveService
     protected $secretKey;
     protected $publicKey;
     protected $baseUrl = 'https://api.flutterwave.com/v3';
+    protected $mode;
 
     public function __construct()
     {
         $settings = Setting::getValue('payment_gateways', []);
-        $this->secretKey = $settings['flutterwave']['secret_key'] ?? '';
-        $this->publicKey = $settings['flutterwave']['public_key'] ?? '';
+        $this->mode = $settings['mode'] ?? 'test';
+        
+        $flutterwaveSettings = $settings['flutterwave'] ?? [];
+        
+        // Use test or live keys based on mode
+        if ($this->mode === 'live') {
+            $this->secretKey = $flutterwaveSettings['live_secret_key'] ?? '';
+            $this->publicKey = $flutterwaveSettings['live_public_key'] ?? '';
+        } else {
+            $this->secretKey = $flutterwaveSettings['test_secret_key'] ?? '';
+            $this->publicKey = $flutterwaveSettings['test_public_key'] ?? '';
+        }
+    }
+
+    public function getMode(): string
+    {
+        return $this->mode;
+    }
+
+    public function isLiveMode(): bool
+    {
+        return $this->mode === 'live';
     }
 
     public function initializeTransaction($email, $amount, $reference, $redirectUrl, $customerName, $metadata = [])

@@ -10,12 +10,33 @@ class PaystackService
     protected $secretKey;
     protected $publicKey;
     protected $baseUrl = 'https://api.paystack.co';
+    protected $mode;
 
     public function __construct()
     {
         $settings = Setting::getValue('payment_gateways', []);
-        $this->secretKey = $settings['paystack']['secret_key'] ?? '';
-        $this->publicKey = $settings['paystack']['public_key'] ?? '';
+        $this->mode = $settings['mode'] ?? 'test';
+        
+        $paystackSettings = $settings['paystack'] ?? [];
+        
+        // Use test or live keys based on mode
+        if ($this->mode === 'live') {
+            $this->secretKey = $paystackSettings['live_secret_key'] ?? '';
+            $this->publicKey = $paystackSettings['live_public_key'] ?? '';
+        } else {
+            $this->secretKey = $paystackSettings['test_secret_key'] ?? '';
+            $this->publicKey = $paystackSettings['test_public_key'] ?? '';
+        }
+    }
+
+    public function getMode(): string
+    {
+        return $this->mode;
+    }
+
+    public function isLiveMode(): bool
+    {
+        return $this->mode === 'live';
     }
 
     public function initializeTransaction($email, $amount, $reference, $callbackUrl, $metadata = [])

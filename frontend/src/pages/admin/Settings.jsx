@@ -12,8 +12,21 @@ const defaultCurrencies = [
 
 const defaultPaymentGateways = {
   active_gateway: 'paystack',
-  paystack: { public_key: '', secret_key: '', enabled: true },
-  flutterwave: { public_key: '', secret_key: '', enabled: false },
+  mode: 'test', // 'test' or 'live'
+  paystack: { 
+    test_public_key: '', 
+    test_secret_key: '', 
+    live_public_key: '', 
+    live_secret_key: '', 
+    enabled: true 
+  },
+  flutterwave: { 
+    test_public_key: '', 
+    test_secret_key: '', 
+    live_public_key: '', 
+    live_secret_key: '', 
+    enabled: false 
+  },
 }
 
 const tabs = [
@@ -87,6 +100,13 @@ export default function AdminSettings() {
       active_gateway: gateway,
       paystack: { ...prev.paystack, enabled: gateway === 'paystack' },
       flutterwave: { ...prev.flutterwave, enabled: gateway === 'flutterwave' },
+    }))
+  }
+
+  const handleModeChange = (mode) => {
+    setPaymentGateways(prev => ({
+      ...prev,
+      mode: mode
     }))
   }
 
@@ -321,6 +341,37 @@ export default function AdminSettings() {
           {/* Payment Settings Tab */}
           {activeTab === 'payment' && (
             <div className="space-y-6">
+              {/* Environment Mode */}
+              <div className="card">
+                <div className="flex items-center gap-2 mb-1">
+                  <CreditCard size={18} className="text-primary-600" />
+                  <h3 className="text-sm font-medium text-text">Environment Mode</h3>
+                </div>
+                <p className="text-xs text-text-muted mb-4">Switch between test and live modes. Use test mode for development and live mode for production.</p>
+                <div className="flex gap-2">
+                  <button
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${paymentGateways.mode === 'test' ? 'bg-yellow-500 text-white' : 'bg-muted text-text-muted hover:text-text'}`}
+                    onClick={() => handleModeChange('test')}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-current"></span>
+                    Test Mode
+                  </button>
+                  <button
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${paymentGateways.mode === 'live' ? 'bg-green-600 text-white' : 'bg-muted text-text-muted hover:text-text'}`}
+                    onClick={() => handleModeChange('live')}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-current"></span>
+                    Live Mode
+                  </button>
+                </div>
+                {paymentGateways.mode === 'live' && (
+                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700 font-medium">⚠️ Live mode is active. Real transactions will be processed.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Active Gateway Selection */}
               <div className="card">
                 <div className="flex items-center gap-2 mb-1">
                   <CreditCard size={18} className="text-primary-600" />
@@ -354,18 +405,49 @@ export default function AdminSettings() {
                     {paymentGateways.active_gateway === 'paystack' ? 'Active' : 'Inactive'}
                   </span>
                 </div>
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="form-group">
-                    <label className="form-label">Public Key</label>
-                    <input type="text" className="form-input" placeholder="pk_test_..." value={paymentGateways.paystack?.public_key || ''} onChange={(e) => handlePaymentGatewayChange('paystack', 'public_key', e.target.value)} />
+
+                {/* Test Keys */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <h4 className="text-sm font-medium text-yellow-800 mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                    Test Keys
+                  </h4>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="form-group">
+                      <label className="form-label">Test Public Key</label>
+                      <input type="text" className="form-input" placeholder="pk_test_..." value={paymentGateways.paystack?.test_public_key || ''} onChange={(e) => handlePaymentGatewayChange('paystack', 'test_public_key', e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Test Secret Key</label>
+                      <div className="relative">
+                        <input type={showSecrets.paystack ? 'text' : 'password'} className="form-input pr-10" placeholder="sk_test_..." value={paymentGateways.paystack?.test_secret_key || ''} onChange={(e) => handlePaymentGatewayChange('paystack', 'test_secret_key', e.target.value)} />
+                        <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text" onClick={() => setShowSecrets(prev => ({ ...prev, paystack: !prev.paystack }))}>
+                          {showSecrets.paystack ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Secret Key</label>
-                    <div className="relative">
-                      <input type={showSecrets.paystack ? 'text' : 'password'} className="form-input pr-10" placeholder="sk_test_..." value={paymentGateways.paystack?.secret_key || ''} onChange={(e) => handlePaymentGatewayChange('paystack', 'secret_key', e.target.value)} />
-                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text" onClick={() => setShowSecrets(prev => ({ ...prev, paystack: !prev.paystack }))}>
-                        {showSecrets.paystack ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
+                </div>
+
+                {/* Live Keys */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-green-800 mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                    Live Keys
+                  </h4>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="form-group">
+                      <label className="form-label">Live Public Key</label>
+                      <input type="text" className="form-input" placeholder="pk_live_..." value={paymentGateways.paystack?.live_public_key || ''} onChange={(e) => handlePaymentGatewayChange('paystack', 'live_public_key', e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Live Secret Key</label>
+                      <div className="relative">
+                        <input type={showSecrets.paystack ? 'text' : 'password'} className="form-input pr-10" placeholder="sk_live_..." value={paymentGateways.paystack?.live_secret_key || ''} onChange={(e) => handlePaymentGatewayChange('paystack', 'live_secret_key', e.target.value)} />
+                        <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text" onClick={() => setShowSecrets(prev => ({ ...prev, paystack: !prev.paystack }))}>
+                          {showSecrets.paystack ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -385,18 +467,49 @@ export default function AdminSettings() {
                     {paymentGateways.active_gateway === 'flutterwave' ? 'Active' : 'Inactive'}
                   </span>
                 </div>
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="form-group">
-                    <label className="form-label">Public Key</label>
-                    <input type="text" className="form-input" placeholder="FLWPUBK_TEST-..." value={paymentGateways.flutterwave?.public_key || ''} onChange={(e) => handlePaymentGatewayChange('flutterwave', 'public_key', e.target.value)} />
+
+                {/* Test Keys */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <h4 className="text-sm font-medium text-yellow-800 mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                    Test Keys
+                  </h4>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="form-group">
+                      <label className="form-label">Test Public Key</label>
+                      <input type="text" className="form-input" placeholder="FLWPUBK_TEST-..." value={paymentGateways.flutterwave?.test_public_key || ''} onChange={(e) => handlePaymentGatewayChange('flutterwave', 'test_public_key', e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Test Secret Key</label>
+                      <div className="relative">
+                        <input type={showSecrets.flutterwave ? 'text' : 'password'} className="form-input pr-10" placeholder="FLWSECK_TEST-..." value={paymentGateways.flutterwave?.test_secret_key || ''} onChange={(e) => handlePaymentGatewayChange('flutterwave', 'test_secret_key', e.target.value)} />
+                        <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text" onClick={() => setShowSecrets(prev => ({ ...prev, flutterwave: !prev.flutterwave }))}>
+                          {showSecrets.flutterwave ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Secret Key</label>
-                    <div className="relative">
-                      <input type={showSecrets.flutterwave ? 'text' : 'password'} className="form-input pr-10" placeholder="FLWSECK_TEST-..." value={paymentGateways.flutterwave?.secret_key || ''} onChange={(e) => handlePaymentGatewayChange('flutterwave', 'secret_key', e.target.value)} />
-                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text" onClick={() => setShowSecrets(prev => ({ ...prev, flutterwave: !prev.flutterwave }))}>
-                        {showSecrets.flutterwave ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
+                </div>
+
+                {/* Live Keys */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-green-800 mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                    Live Keys
+                  </h4>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="form-group">
+                      <label className="form-label">Live Public Key</label>
+                      <input type="text" className="form-input" placeholder="FLWPUBK-..." value={paymentGateways.flutterwave?.live_public_key || ''} onChange={(e) => handlePaymentGatewayChange('flutterwave', 'live_public_key', e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Live Secret Key</label>
+                      <div className="relative">
+                        <input type={showSecrets.flutterwave ? 'text' : 'password'} className="form-input pr-10" placeholder="FLWSECK-..." value={paymentGateways.flutterwave?.live_secret_key || ''} onChange={(e) => handlePaymentGatewayChange('flutterwave', 'live_secret_key', e.target.value)} />
+                        <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text" onClick={() => setShowSecrets(prev => ({ ...prev, flutterwave: !prev.flutterwave }))}>
+                          {showSecrets.flutterwave ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
