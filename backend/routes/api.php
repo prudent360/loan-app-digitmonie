@@ -160,5 +160,15 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/settings/logo', [SettingsController::class, 'uploadLogo']);
             Route::delete('/settings/logo', [SettingsController::class, 'deleteLogo']);
         });
+
+        // Bill Transactions - view all bill payment transactions
+        Route::get('/bills', [\App\Http\Controllers\Admin\BillController::class, 'index']);
+        Route::get('/bills/stats', [\App\Http\Controllers\Admin\BillController::class, 'stats']);
+        Route::get('/bills/{bill}', [\App\Http\Controllers\Admin\BillController::class, 'show']);
+
+        // Wallets - view all user wallets
+        Route::get('/wallets', [\App\Http\Controllers\Admin\WalletController::class, 'index']);
+        Route::get('/wallets/stats', [\App\Http\Controllers\Admin\WalletController::class, 'stats']);
+        Route::get('/wallets/{wallet}', [\App\Http\Controllers\Admin\WalletController::class, 'show']);
     });
 });
