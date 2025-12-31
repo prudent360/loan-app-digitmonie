@@ -31,15 +31,15 @@ export default function AdminLayout({ children }) {
       {sidebarOpen && <div className="lg:hidden fixed inset-0 bg-black/20 z-40" onClick={() => setSidebarOpen(false)} />}
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 h-full w-56 bg-surface border-r border-border flex flex-col z-40 transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed top-0 left-0 h-full w-56 bg-gradient-to-b from-slate-900 via-slate-800 to-primary-900 flex flex-col z-40 transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Brand */}
-        <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border">
-          <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+        <div className="flex items-center gap-2.5 px-5 py-5 border-b border-white/10">
+          <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
             <Wallet size={18} className="text-white" />
           </div>
           <div>
-            <span className="text-lg font-semibold text-text">DigitMonie</span>
-            <span className="block text-xs text-primary-600">Admin</span>
+            <span className="text-lg font-semibold text-white">DigitMonie</span>
+            <span className="block text-xs text-primary-400">Admin</span>
           </div>
         </div>
 
@@ -47,7 +47,7 @@ export default function AdminLayout({ children }) {
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navLinks.map(({ to, icon: Icon, label }) => (
             <NavLink key={to} to={to} end={to === '/admin'} onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive ? 'bg-white/10 text-white' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}>
               <Icon size={18} />
               <span>{label}</span>
             </NavLink>
@@ -55,17 +55,17 @@ export default function AdminLayout({ children }) {
         </nav>
 
         {/* User & Logout */}
-        <div className="px-3 py-4 border-t border-border">
+        <div className="px-3 py-4 border-t border-white/10">
           <div className="flex items-center gap-3 px-2 mb-3">
-            <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-sm font-medium">
+            <div className="w-8 h-8 rounded-full bg-primary-500/20 text-primary-400 flex items-center justify-center text-sm font-medium">
               {user?.name?.charAt(0)?.toUpperCase() || 'A'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-text truncate">{user?.name}</p>
-              <p className="text-xs text-primary-600">Administrator</p>
+              <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+              <p className="text-xs text-primary-400">Administrator</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="nav-link w-full text-red-600 hover:text-red-700 hover:bg-red-50">
+          <button onClick={handleLogout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium w-full text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all">
             <LogOut size={18} />
             <span>Logout</span>
           </button>
