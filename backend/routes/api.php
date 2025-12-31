@@ -16,6 +16,8 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Customer\PaymentController;
 use App\Http\Controllers\Customer\VirtualCardController;
 use App\Http\Controllers\Customer\BillPaymentController;
+use App\Http\Controllers\Customer\WalletController;
+use App\Http\Controllers\Customer\ReceiptController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 
 /*
@@ -90,6 +92,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/bills/pay', [BillPaymentController::class, 'pay']);
         Route::get('/bills/history', [BillPaymentController::class, 'history']);
         Route::get('/bills/{id}', [BillPaymentController::class, 'show']);
+
+        // Wallet
+        Route::get('/wallet', [WalletController::class, 'index']);
+        Route::get('/wallet/transactions', [WalletController::class, 'transactions']);
+        Route::post('/wallet/fund', [WalletController::class, 'initializeFunding']);
+        Route::post('/wallet/fund/verify', [WalletController::class, 'verifyFunding']);
+
+        // Receipts
+        Route::get('/receipts/bill/{id}', [ReceiptController::class, 'billReceipt']);
+        Route::get('/receipts/bill/{id}/preview', [ReceiptController::class, 'streamBillReceipt']);
+        Route::get('/receipts/wallet/{id}', [ReceiptController::class, 'walletReceipt']);
+        Route::get('/receipts/wallet/{id}/preview', [ReceiptController::class, 'streamWalletReceipt']);
     });
 
     // Admin routes - require any admin role

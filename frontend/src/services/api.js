@@ -145,5 +145,45 @@ export const billPaymentAPI = {
   getTransaction: (id) => api.get(`/customer/bills/${id}`),
 }
 
+// Wallet APIs
+export const walletAPI = {
+  getBalance: () => api.get('/customer/wallet'),
+  getTransactions: (params) => api.get('/customer/wallet/transactions', { params }),
+  initializeFunding: (amount) => api.post('/customer/wallet/fund', { amount }),
+  verifyFunding: (reference, transactionId) => api.post('/customer/wallet/fund/verify', { reference, transaction_id: transactionId }),
+}
+
+// Receipt APIs
+export const receiptAPI = {
+  getBillReceiptUrl: (id) => `${API_URL}/customer/receipts/bill/${id}`,
+  getWalletReceiptUrl: (id) => `${API_URL}/customer/receipts/wallet/${id}`,
+  downloadBillReceipt: async (id) => {
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${API_URL}/customer/receipts/bill/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `receipt-${id}.pdf`
+    a.click()
+    window.URL.revokeObjectURL(url)
+  },
+  downloadWalletReceipt: async (id) => {
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${API_URL}/customer/receipts/wallet/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `wallet-receipt-${id}.pdf`
+    a.click()
+    window.URL.revokeObjectURL(url)
+  },
+}
+
 export default api
 

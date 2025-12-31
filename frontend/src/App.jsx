@@ -18,6 +18,7 @@ import PaymentCallback from './pages/customer/PaymentCallback'
 import PaymentHistory from './pages/customer/PaymentHistory'
 import VirtualCards from './pages/customer/VirtualCards'
 import BillPayments from './pages/customer/BillPayments'
+import Wallet from './pages/customer/Wallet'
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -90,6 +91,7 @@ function AppRoutes() {
       <Route path="/payment/callback" element={<ProtectedRoute requiredRole="customer"><PaymentCallback /></ProtectedRoute>} />
       <Route path="/cards" element={<ProtectedRoute requiredRole="customer"><VirtualCards /></ProtectedRoute>} />
       <Route path="/bills" element={<ProtectedRoute requiredRole="customer"><BillPayments /></ProtectedRoute>} />
+      <Route path="/wallet" element={<ProtectedRoute requiredRole="customer"><Wallet /></ProtectedRoute>} />
       
       {/* Admin Routes */}
       <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
