@@ -53,23 +53,43 @@ class VirtualCardController extends Controller
         $user = Auth::user();
 
         try {
-            $response = $this->flutterwave->createVirtualCard([
-                'currency' => $request->currency,
-                'amount' => $request->amount,
-                'billing_name' => $user->name,
-                'billing_address' => $request->billing_address,
-                'billing_city' => $request->billing_city,
-                'billing_state' => $request->billing_state,
-                'billing_postal_code' => $request->billing_postal_code,
-                'billing_country' => 'NG',
-                'first_name' => explode(' ', $user->name)[0],
-                'last_name' => explode(' ', $user->name)[1] ?? '',
-                'date_of_birth' => $request->date_of_birth,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'title' => $request->title ?? 'Mr',
-                'gender' => $request->gender ?? 'M',
-            ]);
+            // SIMULATION: If in test mode, mock success since Flutterwave test accounts don't support virtual cards
+            if (!$this->flutterwave->isLiveMode()) {
+                $mockCardId = 'TEST-CARD-' . strtoupper(substr(md5(uniqid()), 0, 8));
+                $response = [
+                    'status' => 'success',
+                    'message' => 'Virtual card created successfully (Test Mode)',
+                    'data' => [
+                        'id' => $mockCardId,
+                        'card_pan' => '5366' . rand(1000, 9999) . rand(1000, 9999) . rand(1000, 9999),
+                        'masked_pan' => '5366****' . rand(1000, 9999),
+                        'currency' => $request->currency,
+                        'balance' => $request->amount,
+                        'name_on_card' => strtoupper($user->name),
+                        'expiry' => date('m/y', strtotime('+3 years')),
+                        'cvv' => rand(100, 999),
+                        'is_active' => true,
+                    ]
+                ];
+            } else {
+                $response = $this->flutterwave->createVirtualCard([
+                    'currency' => $request->currency,
+                    'amount' => $request->amount,
+                    'billing_name' => $user->name,
+                    'billing_address' => $request->billing_address,
+                    'billing_city' => $request->billing_city,
+                    'billing_state' => $request->billing_state,
+                    'billing_postal_code' => $request->billing_postal_code,
+                    'billing_country' => 'NG',
+                    'first_name' => explode(' ', $user->name)[0],
+                    'last_name' => explode(' ', $user->name)[1] ?? '',
+                    'date_of_birth' => $request->date_of_birth,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'title' => $request->title ?? 'Mr',
+                    'gender' => $request->gender ?? 'M',
+                ]);
+            }
 
             if ($response['status'] !== 'success') {
                 return response()->json([
