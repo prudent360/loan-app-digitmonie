@@ -23,6 +23,7 @@ import Wallet from './pages/customer/Wallet'
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminUsers from './pages/admin/Users'
+import UserDetail from './pages/admin/UserDetail'
 import AdminLoans from './pages/admin/Loans'
 import AdminKYC from './pages/admin/KYCReview'
 import AdminSettings from './pages/admin/Settings'
@@ -96,6 +97,7 @@ function AppRoutes() {
       {/* Admin Routes */}
       <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
+      <Route path="/admin/users/:id" element={<ProtectedRoute requiredRole="admin"><UserDetail /></ProtectedRoute>} />
       <Route path="/admin/loans" element={<ProtectedRoute requiredRole="admin"><AdminLoans /></ProtectedRoute>} />
       <Route path="/admin/kyc" element={<ProtectedRoute requiredRole="admin"><AdminKYC /></ProtectedRoute>} />
       <Route path="/admin/payments" element={<ProtectedRoute requiredRole="admin"><AdminPayments /></ProtectedRoute>} />

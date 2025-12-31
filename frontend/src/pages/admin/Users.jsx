@@ -100,7 +100,7 @@ export default function AdminUsers() {
                     <td className="text-text-muted text-sm">{formatDate(user.created_at)}</td>
                     <td>
                       <div className="flex gap-1">
-                        <button className="p-1.5 rounded text-text-muted hover:text-text hover:bg-muted" onClick={() => setSelectedUser(user)}><Eye size={16} /></button>
+                        <a href={`/admin/users/${user.id}`} className="p-1.5 rounded text-text-muted hover:text-text hover:bg-muted"><Eye size={16} /></a>
                         {user.status === 'active' ? (
                           <button className="p-1.5 rounded text-text-muted hover:text-red-600 hover:bg-red-50" onClick={() => handleStatusChange(user.id, 'suspended')}><UserX size={16} /></button>
                         ) : (

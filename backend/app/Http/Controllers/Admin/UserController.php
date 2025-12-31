@@ -33,9 +33,22 @@ class UserController extends Controller
 
     public function show(User $user)
     {
-        $user->load(['loans', 'kycDocuments']);
+        // Load related data
+        $user->load([
+            'loans' => fn($q) => $q->latest()->take(5),
+            'kycDocuments',
+            'wallet.transactions' => fn($q) => $q->latest()->take(5),
+        ]);
+
+        // Add computed fields
+        $user->active_loans_count = $user->loans()->whereIn('status', ['approved', 'disbursed'])->count();
+        $user->total_borrowed = $user->loans()->where('status', 'disbursed')->sum('amount');
+        $user->wallet_transactions = $user->wallet?->transactions ?? collect();
         
-        return response()->json($user);
+        return response()->json([
+            'success' => true,
+            'user' => $user,
+        ]);
     }
 
     public function updateStatus(Request $request, User $user)
