@@ -172,10 +172,10 @@ class BillPaymentController extends Controller
             'category' => 'required|string',
             'biller_code' => 'required|string',
             'biller_name' => 'required|string',
-            'item_code' => 'sometimes|string',
-            'item_name' => 'sometimes|string',
+            'item_code' => 'nullable|string',
+            'item_name' => 'nullable|string',
             'customer_id' => 'required|string',
-            'customer_name' => 'sometimes|string',
+            'customer_name' => 'nullable|string',
             'amount' => 'required|numeric|min:50',
             'type' => 'required|string', // AIRTIME, DATA, etc.
         ]);
