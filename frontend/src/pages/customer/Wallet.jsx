@@ -18,15 +18,23 @@ export default function Wallet() {
   useEffect(() => {
     loadWallet()
     
-    // Check for callback parameters
+    // Check for callback parameters from Flutterwave
     const status = searchParams.get('status')
     const txRef = searchParams.get('tx_ref')
     const transactionId = searchParams.get('transaction_id')
     
+    console.log('Wallet callback params:', { status, txRef, transactionId })
+    
     if (status === 'successful' && txRef && transactionId) {
       verifyPayment(txRef, transactionId)
+    } else if (status === 'cancelled') {
+      alert('Payment was cancelled')
+      window.history.replaceState({}, document.title, '/wallet')
+    } else if (status && status !== 'successful') {
+      alert('Payment was not successful: ' + status)
+      window.history.replaceState({}, document.title, '/wallet')
     }
-  }, [])
+  }, [searchParams])
 
   const loadWallet = async () => {
     try {
@@ -43,17 +51,24 @@ export default function Wallet() {
 
   const verifyPayment = async (reference, transactionId) => {
     setVerifying(true)
+    setLoading(false) // Allow UI to show verifying state
+    console.log('Verifying payment:', { reference, transactionId })
+    
     try {
       const res = await walletAPI.verifyFunding(reference, transactionId)
+      console.log('Verification response:', res.data)
+      
       if (res.data.success) {
         setWallet(res.data.wallet)
-        alert('Wallet funded successfully!')
+        alert('Wallet funded successfully! New balance: ' + res.data.wallet.formatted_balance)
         loadWallet() // Refresh data
       } else {
         alert(res.data.message || 'Payment verification failed')
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to verify payment')
+      console.error('Verification error:', err)
+      const errorMsg = err.response?.data?.message || 'Failed to verify payment. Please contact support.'
+      alert(errorMsg)
     } finally {
       setVerifying(false)
       // Clean URL
