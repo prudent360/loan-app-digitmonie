@@ -164,7 +164,7 @@ class BillPaymentController extends Controller
     }
 
     /**
-     * Process a bill payment
+     * Process a bill payment from wallet
      */
     public function pay(Request $request)
     {
@@ -183,7 +183,20 @@ class BillPaymentController extends Controller
         $user = Auth::user();
         $reference = BillTransaction::generateReference();
         $fee = $this->calculateFee($request->amount, $request->category);
-        $totalAmount = $request->amount + $fee;
+        $totalAmount = (float) $request->amount + $fee;
+
+        // Get user's wallet
+        $wallet = \App\Models\Wallet::getOrCreateForUser($user->id);
+
+        // Check wallet balance
+        if ($wallet->balance < $totalAmount) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Insufficient wallet balance. You need ₦' . number_format((float)$totalAmount, 2) . ' but have ₦' . number_format((float)$wallet->balance, 2),
+                'required' => $totalAmount,
+                'balance' => $wallet->balance,
+            ], 400);
+        }
 
         // Create transaction record
         $transaction = BillTransaction::create([
@@ -203,6 +216,7 @@ class BillPaymentController extends Controller
         ]);
 
         try {
+            // Call Flutterwave to process the bill
             $response = $this->flutterwave->payBill([
                 'country' => 'NG',
                 'customer_id' => $request->customer_id,
@@ -213,6 +227,16 @@ class BillPaymentController extends Controller
             ]);
 
             if ($response['status'] === 'success') {
+                // Debit wallet
+                $wallet->debit(
+                    $totalAmount,
+                    'Bill payment: ' . $request->biller_name . ' - ' . $request->customer_id,
+                    $reference,
+                    'bill_payment',
+                    'flutterwave',
+                    $response['data']['flw_ref'] ?? $reference
+                );
+
                 $transaction->update([
                     'status' => 'successful',
                     'flw_ref' => $response['data']['flw_ref'] ?? null,
@@ -225,7 +249,8 @@ class BillPaymentController extends Controller
                     'success' => true,
                     'message' => 'Bill payment successful',
                     'transaction' => $transaction->fresh(),
-                    'token' => $transaction->token, // For electricity, return the token
+                    'token' => $transaction->token,
+                    'wallet_balance' => $wallet->fresh()->formatted_balance,
                 ]);
             } else {
                 $transaction->update([
@@ -236,7 +261,7 @@ class BillPaymentController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' => $response['message'] ?? 'Bill payment failed',
+                    'message' => $response['message'] ?? 'Bill payment failed. Please contact support.',
                     'transaction' => $transaction->fresh(),
                 ], 400);
             }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import CustomerLayout from '../../components/layouts/CustomerLayout'
-import { billPaymentAPI, receiptAPI } from '../../services/api'
+import { billPaymentAPI, receiptAPI, walletAPI } from '../../services/api'
 import { Phone, Wifi, Zap, Tv, Globe, Loader2, CheckCircle2, X, ArrowRight, History, Search, Download } from 'lucide-react'
 
 const CATEGORIES = [
@@ -52,6 +52,22 @@ export default function BillPayments() {
   // History state
   const [history, setHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
+
+  // Wallet state
+  const [wallet, setWallet] = useState(null)
+  
+  useEffect(() => {
+    loadWallet()
+  }, [])
+
+  const loadWallet = async () => {
+    try {
+      const res = await walletAPI.getBalance()
+      setWallet(res.data.wallet)
+    } catch (err) {
+      console.error('Failed to load wallet:', err)
+    }
+  }
 
   useEffect(() => {
     if (activeTab === 'history') {
@@ -160,6 +176,15 @@ export default function BillPayments() {
       const res = await billPaymentAPI.pay(paymentData)
       if (res.data.success) {
         setTransaction(res.data.transaction)
+        // Update local wallet balance if returned
+        if (res.data.wallet_balance) {
+          setWallet(prev => ({ 
+            ...prev, 
+            balance: prev.balance - (Number(amount || selectedItem?.amount || 0)), // Estimate
+            formatted_balance: res.data.wallet_balance 
+          }))
+          loadWallet() // Refresh to be sure
+        }
         setStep(5)
       } else {
         alert(res.data.message || 'Payment failed')
@@ -421,12 +446,30 @@ export default function BillPayments() {
                     <span className="text-text font-medium">Total</span>
                     <span className="text-primary-600 font-bold">₦{Number(amount || selectedItem?.amount || 0).toLocaleString()}</span>
                   </div>
+                  
+                  {/* Wallet Balance Check */}
+                  <div className={`mt-4 p-3 rounded-lg border ${wallet && wallet.balance >= (Number(amount || selectedItem?.amount || 0)) ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm text-text-muted">Wallet Balance</span>
+                      <span className="font-semibold text-text">{wallet?.formatted_balance || '₦0.00'}</span>
+                    </div>
+                    {wallet && wallet.balance < (Number(amount || selectedItem?.amount || 0)) && (
+                      <p className="text-xs text-red-600 font-medium">Insufficient funds. Please fund your wallet first.</p>
+                    )}
+                    {wallet && wallet.balance >= (Number(amount || selectedItem?.amount || 0)) && (
+                      <p className="text-xs text-green-600 font-medium">✓ Sufficient balance</p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex gap-3">
                   <button onClick={() => setStep(3)} className="btn btn-outline flex-1">Back</button>
-                  <button onClick={handlePayment} className="btn btn-primary flex-1">
-                    Pay Now
+                  <button 
+                    onClick={handlePayment} 
+                    className="btn btn-primary flex-1"
+                    disabled={!wallet || wallet.balance < (Number(amount || selectedItem?.amount || 0))}
+                  >
+                    Pay from Wallet
                   </button>
                 </div>
               </div>
