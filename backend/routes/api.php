@@ -40,6 +40,9 @@ Route::get('/loan-settings', [SettingsController::class, 'getLoanSettings']);
 // Get logo (public)
 Route::get('/logo', [SettingsController::class, 'getLogo']);
 
+// Get active payment gateway (public)
+Route::get('/settings/active-gateway', [SettingsController::class, 'getActiveGateway']);
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Auth
@@ -104,6 +107,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/receipts/bill/{id}/preview', [ReceiptController::class, 'streamBillReceipt']);
         Route::get('/receipts/wallet/{id}', [ReceiptController::class, 'walletReceipt']);
         Route::get('/receipts/wallet/{id}/preview', [ReceiptController::class, 'streamWalletReceipt']);
+
+        // Savings
+        Route::get('/savings/plans', [\App\Http\Controllers\Customer\SavingsController::class, 'plans']);
+        Route::get('/savings', [\App\Http\Controllers\Customer\SavingsController::class, 'index']);
+        Route::post('/savings', [\App\Http\Controllers\Customer\SavingsController::class, 'store']);
+        Route::get('/savings/{id}', [\App\Http\Controllers\Customer\SavingsController::class, 'show']);
+        Route::post('/savings/{id}/withdraw', [\App\Http\Controllers\Customer\SavingsController::class, 'withdraw']);
+        Route::post('/savings/{id}/add-funds', [\App\Http\Controllers\Customer\SavingsController::class, 'addFunds']);
     });
 
     // Admin routes - require any admin role
@@ -170,5 +181,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/wallets', [\App\Http\Controllers\Admin\WalletController::class, 'index']);
         Route::get('/wallets/stats', [\App\Http\Controllers\Admin\WalletController::class, 'stats']);
         Route::get('/wallets/{wallet}', [\App\Http\Controllers\Admin\WalletController::class, 'show']);
+
+        // Savings Plans - admin management
+        Route::get('/savings/stats', [\App\Http\Controllers\Admin\SavingsController::class, 'stats']);
+        Route::get('/savings/subscriptions', [\App\Http\Controllers\Admin\SavingsController::class, 'subscriptions']);
+        Route::get('/savings/email-templates', [\App\Http\Controllers\Admin\SavingsController::class, 'getEmailTemplates']);
+        Route::put('/savings/email-templates', [\App\Http\Controllers\Admin\SavingsController::class, 'updateEmailTemplate']);
+        Route::post('/savings/email-templates/reset', [\App\Http\Controllers\Admin\SavingsController::class, 'resetEmailTemplate']);
+        Route::get('/savings', [\App\Http\Controllers\Admin\SavingsController::class, 'index']);
+        Route::post('/savings', [\App\Http\Controllers\Admin\SavingsController::class, 'store']);
+        Route::get('/savings/{id}', [\App\Http\Controllers\Admin\SavingsController::class, 'show']);
+        Route::put('/savings/{id}', [\App\Http\Controllers\Admin\SavingsController::class, 'update']);
+        Route::delete('/savings/{id}', [\App\Http\Controllers\Admin\SavingsController::class, 'destroy']);
+        Route::post('/savings/{id}/toggle', [\App\Http\Controllers\Admin\SavingsController::class, 'toggleStatus']);
     });
 });

@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { Wallet, LayoutDashboard, FileText, Upload, User, LogOut, Menu, X, CreditCard, Phone, Receipt } from 'lucide-react'
+import { Wallet, LayoutDashboard, FileText, Upload, User, LogOut, Menu, X, Receipt, PiggyBank } from 'lucide-react'
 import { useState } from 'react'
 
 export default function CustomerLayout({ children }) {
@@ -14,8 +14,7 @@ export default function CustomerLayout({ children }) {
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/wallet', icon: Wallet, label: 'Wallet' },
     { to: '/loans', icon: FileText, label: 'My Loans' },
-    { to: '/cards', icon: CreditCard, label: 'Virtual Cards' },
-    { to: '/bills', icon: Phone, label: 'Bill Payments' },
+    { to: '/savings', icon: PiggyBank, label: 'Savings' },
     { to: '/payments', icon: Receipt, label: 'Payments' },
     { to: '/kyc', icon: Upload, label: 'KYC Documents' },
     { to: '/profile', icon: User, label: 'Profile' },

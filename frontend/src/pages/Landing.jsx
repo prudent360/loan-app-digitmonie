@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 
 export default function Landing() {
-  const [loanAmount, setLoanAmount] = useState(500000)
-  const [tenure, setTenure] = useState(12)
+  const [investmentAmount, setInvestmentAmount] = useState(500000)
+  const [investmentPeriod, setInvestmentPeriod] = useState(12)
   const [logoUrl, setLogoUrl] = useState(null)
   const [activeService, setActiveService] = useState('loans')
-  const interestRate = 15
+  const returnRate = 30
 
   useEffect(() => {
     const fetchLogo = async () => {
@@ -24,10 +24,12 @@ export default function Landing() {
     fetchLogo()
   }, [])
 
-  const monthlyRate = interestRate / 12 / 100
-  const emi = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, tenure)) / (Math.pow(1 + monthlyRate, tenure) - 1)
-  const totalPayment = emi * tenure
-  const totalInterest = totalPayment - loanAmount
+  // Investment calculator - 30% annual return
+  const annualRate = returnRate / 100
+  const monthlyRate = annualRate / 12
+  const totalReturns = investmentAmount * (Math.pow(1 + monthlyRate, investmentPeriod) - 1)
+  const maturityAmount = investmentAmount + totalReturns
+  const monthlyReturns = totalReturns / investmentPeriod
 
   const formatCurrency = (amount) => `₦${Math.round(amount).toLocaleString()}`
 
@@ -380,49 +382,49 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Calculator */}
+      {/* Investment Calculator */}
       <section id="calculator" className="py-20 px-6 bg-muted/50">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-text mb-3">Loan Calculator</h2>
-            <p className="text-text-muted">Plan your loan with our easy-to-use calculator</p>
+            <h2 className="text-3xl font-bold text-text mb-3">Investment Calculator</h2>
+            <p className="text-text-muted">See how your money grows with our 30% annual returns</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Inputs */}
             <div className="card">
               <div className="mb-6">
-                <label className="form-label">Loan Amount</label>
-                <div className="text-2xl font-bold text-primary-600 mb-3">{formatCurrency(loanAmount)}</div>
-                <input type="range" min="50000" max="5000000" step="50000" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary-600" />
-                <div className="flex justify-between text-xs text-text-muted mt-1"><span>₦50K</span><span>₦5M</span></div>
+                <label className="form-label">Investment Amount</label>
+                <div className="text-2xl font-bold text-primary-600 mb-3">{formatCurrency(investmentAmount)}</div>
+                <input type="range" min="50000" max="100000000" step="50000" value={investmentAmount} onChange={(e) => setInvestmentAmount(Number(e.target.value))} className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary-600" />
+                <div className="flex justify-between text-xs text-text-muted mt-1"><span>₦50K</span><span>₦100M</span></div>
               </div>
               <div className="mb-6">
-                <label className="form-label">Loan Tenure</label>
-                <div className="text-2xl font-bold text-primary-600 mb-3">{tenure} months</div>
-                <input type="range" min="3" max="36" value={tenure} onChange={(e) => setTenure(Number(e.target.value))} className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary-600" />
+                <label className="form-label">Investment Period</label>
+                <div className="text-2xl font-bold text-primary-600 mb-3">{investmentPeriod} months</div>
+                <input type="range" min="3" max="36" value={investmentPeriod} onChange={(e) => setInvestmentPeriod(Number(e.target.value))} className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary-600" />
                 <div className="flex justify-between text-xs text-text-muted mt-1"><span>3 months</span><span>36 months</span></div>
               </div>
               <div className="flex justify-between p-3 bg-muted rounded-lg text-sm">
-                <span className="text-text-muted">Interest Rate</span>
-                <span className="font-medium text-primary-600">{interestRate}% p.a.</span>
+                <span className="text-text-muted">Annual Returns</span>
+                <span className="font-medium text-primary-600">{returnRate}% p.a.</span>
               </div>
             </div>
 
             {/* Results */}
             <div className="space-y-4">
               <div className="bg-gradient-to-br from-primary-500 to-primary-700 text-white text-center rounded-xl p-6">
-                <p className="text-sm text-primary-100 mb-1">Monthly EMI</p>
-                <p className="text-3xl font-bold">{formatCurrency(emi)}</p>
+                <p className="text-sm text-primary-100 mb-1">Maturity Amount</p>
+                <p className="text-3xl font-bold">{formatCurrency(maturityAmount)}</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="card text-center"><p className="text-xs text-text-muted mb-1">Principal</p><p className="font-semibold text-text">{formatCurrency(loanAmount)}</p></div>
-                <div className="card text-center"><p className="text-xs text-text-muted mb-1">Total Interest</p><p className="font-semibold text-text">{formatCurrency(totalInterest)}</p></div>
+                <div className="card text-center"><p className="text-xs text-text-muted mb-1">Your Investment</p><p className="font-semibold text-text">{formatCurrency(investmentAmount)}</p></div>
+                <div className="card text-center"><p className="text-xs text-text-muted mb-1">Total Returns</p><p className="font-semibold text-primary-600">{formatCurrency(totalReturns)}</p></div>
               </div>
               <div className="card flex justify-between items-center">
-                <span className="text-text-muted text-sm">Total Payment</span>
-                <span className="text-xl font-bold text-primary-600">{formatCurrency(totalPayment)}</span>
+                <span className="text-text-muted text-sm">Avg. Monthly Returns</span>
+                <span className="text-xl font-bold text-primary-600">{formatCurrency(monthlyReturns)}</span>
               </div>
-              <Link to="/register" className="btn btn-primary w-full">Apply for This Loan</Link>
+              <Link to="/register" className="btn btn-primary w-full">Start Investing Now</Link>
             </div>
           </div>
         </div>
@@ -474,7 +476,7 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 border-t border-border">
+      <footer className="py-12 px-6 bg-gradient-to-br from-slate-900 via-slate-800 to-primary-900">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row items-start justify-between gap-8 mb-8">
             <div className="max-w-xs">
@@ -482,44 +484,42 @@ export default function Landing() {
                 {logoUrl ? (
                   <img src={logoUrl} alt="Logo" className="h-8 w-auto object-contain" />
                 ) : (
-                  <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
                     <Wallet size={18} className="text-white" />
                   </div>
                 )}
-                <span className="font-bold text-lg text-text">DigitMonie</span>
+                <span className="font-bold text-lg text-white">DigitMonie</span>
               </Link>
-              <p className="text-sm text-text-muted">Your all-in-one financial platform. Loans, virtual cards, bill payments, and automated savings.</p>
+              <p className="text-sm text-gray-400">Your all-in-one financial platform. Loans and automated savings.</p>
             </div>
             <div className="flex gap-16">
               <div>
-                <h4 className="text-xs font-medium text-text-muted uppercase tracking-wide mb-3">Services</h4>
+                <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Services</h4>
                 <div className="space-y-2">
-                  <a href="#services" className="block text-sm text-text hover:text-primary-600">Loans</a>
-                  <a href="#services" className="block text-sm text-text hover:text-primary-600">Virtual Cards</a>
-                  <a href="#services" className="block text-sm text-text hover:text-primary-600">Bill Payments</a>
-                  <a href="#services" className="block text-sm text-text hover:text-primary-600">Savings</a>
+                  <a href="#services" className="block text-sm text-gray-300 hover:text-primary-400">Loans</a>
+                  <a href="#services" className="block text-sm text-gray-300 hover:text-primary-400">Savings</a>
                 </div>
               </div>
               <div>
-                <h4 className="text-xs font-medium text-text-muted uppercase tracking-wide mb-3">Company</h4>
+                <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Company</h4>
                 <div className="space-y-2">
-                  <a href="#" className="block text-sm text-text hover:text-primary-600">About Us</a>
-                  <a href="#" className="block text-sm text-text hover:text-primary-600">Contact</a>
-                  <a href="#" className="block text-sm text-text hover:text-primary-600">Careers</a>
+                  <a href="#" className="block text-sm text-gray-300 hover:text-primary-400">About Us</a>
+                  <a href="#" className="block text-sm text-gray-300 hover:text-primary-400">Contact</a>
+                  <a href="#" className="block text-sm text-gray-300 hover:text-primary-400">Careers</a>
                 </div>
               </div>
               <div>
-                <h4 className="text-xs font-medium text-text-muted uppercase tracking-wide mb-3">Legal</h4>
+                <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Legal</h4>
                 <div className="space-y-2">
-                  <a href="#" className="block text-sm text-text hover:text-primary-600">Privacy Policy</a>
-                  <a href="#" className="block text-sm text-text hover:text-primary-600">Terms of Service</a>
-                  <a href="#" className="block text-sm text-text hover:text-primary-600">FAQ</a>
+                  <a href="#" className="block text-sm text-gray-300 hover:text-primary-400">Privacy Policy</a>
+                  <a href="#" className="block text-sm text-gray-300 hover:text-primary-400">Terms of Service</a>
+                  <a href="#" className="block text-sm text-gray-300 hover:text-primary-400">FAQ</a>
                 </div>
               </div>
             </div>
           </div>
-          <div className="pt-6 border-t border-border text-center">
-            <p className="text-sm text-text-muted">© {new Date().getFullYear()} DigitMonie. All rights reserved.</p>
+          <div className="pt-6 border-t border-white/10 text-center">
+            <p className="text-sm text-gray-400">© {new Date().getFullYear()} DigitMonie. All rights reserved.</p>
           </div>
         </div>
       </footer>

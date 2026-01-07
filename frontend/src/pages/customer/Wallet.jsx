@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import CustomerLayout from '../../components/layouts/CustomerLayout'
-import { walletAPI } from '../../services/api'
+import api, { walletAPI } from '../../services/api'
 import { Wallet as WalletIcon, Plus, ArrowUpRight, ArrowDownLeft, Loader2, X, TrendingUp, TrendingDown, History, RefreshCw, ExternalLink } from 'lucide-react'
 
 export default function Wallet() {
@@ -14,6 +14,7 @@ export default function Wallet() {
   const [fundAmount, setFundAmount] = useState('')
   const [funding, setFunding] = useState(false)
   const [verifying, setVerifying] = useState(false)
+  const [activeGateway, setActiveGateway] = useState('paystack')
 
   useEffect(() => {
     loadWallet()
@@ -38,10 +39,14 @@ export default function Wallet() {
 
   const loadWallet = async () => {
     try {
-      const res = await walletAPI.getBalance()
-      setWallet(res.data.wallet)
-      setSummary(res.data.summary)
-      setTransactions(res.data.recent_transactions || [])
+      const [walletRes, settingsRes] = await Promise.all([
+        walletAPI.getBalance(),
+        api.get('/settings/active-gateway').catch(() => ({ data: { gateway: 'paystack' } }))
+      ])
+      setWallet(walletRes.data.wallet)
+      setSummary(walletRes.data.summary)
+      setTransactions(walletRes.data.recent_transactions || [])
+      setActiveGateway(settingsRes.data.gateway || 'paystack')
     } catch (err) {
       console.error('Failed to load wallet:', err)
     } finally {
@@ -87,7 +92,7 @@ export default function Wallet() {
     try {
       const res = await walletAPI.initializeFunding(parseFloat(fundAmount))
       if (res.data.success && res.data.payment_link) {
-        // Redirect to Flutterwave payment page
+        // Redirect to payment page
         window.location.href = res.data.payment_link
       } else {
         alert(res.data.message || 'Failed to initialize funding')
@@ -97,6 +102,10 @@ export default function Wallet() {
     } finally {
       setFunding(false)
     }
+  }
+
+  const getGatewayName = () => {
+    return activeGateway === 'flutterwave' ? 'Flutterwave' : 'Paystack'
   }
 
   const formatCurrency = (amount) => `₦${Number(amount || 0).toLocaleString()}`
@@ -281,7 +290,7 @@ export default function Wallet() {
                   <button type="button" className="btn btn-outline" onClick={() => setShowFundModal(false)}>Cancel</button>
                   <button type="submit" className="btn btn-primary" disabled={funding}>
                     {funding ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                    Pay with Flutterwave
+                    Fund Wallet
                   </button>
                 </div>
               </form>

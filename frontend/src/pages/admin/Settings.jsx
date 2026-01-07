@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import AdminLayout from '../../components/layouts/AdminLayout'
 import { useToast } from '../../context/ToastContext'
 import api, { adminAPI } from '../../services/api'
-import { Save, DollarSign, Percent, Mail, Loader2, CreditCard, Eye, EyeOff, Upload, Trash2, Image, Settings, FileText } from 'lucide-react'
+import { Save, DollarSign, Percent, Mail, Loader2, CreditCard, Eye, EyeOff, Upload, Trash2, Image, Settings, FileText, PiggyBank, Edit2, RotateCcw, X, Code } from 'lucide-react'
+import ReactQuill from 'react-quill-new'
+import 'react-quill-new/dist/quill.snow.css'
 
 const defaultCurrencies = [
   { code: 'NGN', symbol: '₦', name: 'Nigerian Naira', active: true },
@@ -62,18 +64,30 @@ export default function AdminSettings() {
     { id: 'kyc_rejected', name: 'KYC Rejected', subject: 'KYC Verification Update', enabled: true },
   ])
 
+  // Savings email templates state
+  const [savingsTemplates, setSavingsTemplates] = useState({})
+  const [savingsShortcodes, setSavingsShortcodes] = useState({})
+  const [editingTemplate, setEditingTemplate] = useState(null)
+  const [templateForm, setTemplateForm] = useState({ subject: '', template: '' })
+  const [savingTemplate, setSavingTemplate] = useState(false)
+
   // Load settings on mount
   useEffect(() => {
     const loadSettings = async () => {
       setLoading(true)
       try {
-        const res = await adminAPI.getSettings()
-        if (res.data.currencies?.length) setCurrencies(res.data.currencies)
-        if (res.data.loan_settings) setLoanSettings(res.data.loan_settings)
-        if (res.data.notification_settings) setNotificationSettings(res.data.notification_settings)
-        if (res.data.payment_gateways) setPaymentGateways(res.data.payment_gateways)
-        if (res.data.logo_url) setLogoUrl(res.data.logo_url)
-        if (res.data.email_templates) setEmailTemplates(res.data.email_templates)
+        const [settingsRes, savingsRes] = await Promise.all([
+          adminAPI.getSettings(),
+          api.get('/admin/savings/email-templates').catch(() => ({ data: {} }))
+        ])
+        if (settingsRes.data.currencies?.length) setCurrencies(settingsRes.data.currencies)
+        if (settingsRes.data.loan_settings) setLoanSettings(settingsRes.data.loan_settings)
+        if (settingsRes.data.notification_settings) setNotificationSettings(settingsRes.data.notification_settings)
+        if (settingsRes.data.payment_gateways) setPaymentGateways(settingsRes.data.payment_gateways)
+        if (settingsRes.data.logo_url) setLogoUrl(settingsRes.data.logo_url)
+        if (settingsRes.data.email_templates) setEmailTemplates(settingsRes.data.email_templates)
+        if (savingsRes.data.templates) setSavingsTemplates(savingsRes.data.templates)
+        if (savingsRes.data.shortcodes) setSavingsShortcodes(savingsRes.data.shortcodes)
       } catch (err) {
         console.error('Failed to load settings:', err)
       } finally {
@@ -112,6 +126,47 @@ export default function AdminSettings() {
 
   const handleEmailTemplateToggle = (templateId) => {
     setEmailTemplates(prev => prev.map(t => t.id === templateId ? { ...t, enabled: !t.enabled } : t))
+  }
+
+  const openTemplateEditor = (type, name) => {
+    const template = savingsTemplates[type]
+    setEditingTemplate({ type, name })
+    setTemplateForm({
+      subject: template?.subject || '',
+      template: template?.template || ''
+    })
+  }
+
+  const handleSaveTemplate = async () => {
+    setSavingTemplate(true)
+    try {
+      await api.put('/admin/savings/email-templates', {
+        type: editingTemplate.type,
+        subject: templateForm.subject,
+        template: templateForm.template
+      })
+      setSavingsTemplates(prev => ({
+        ...prev,
+        [editingTemplate.type]: { subject: templateForm.subject, template: templateForm.template }
+      }))
+      toast.success('Template saved!')
+      setEditingTemplate(null)
+    } catch (err) {
+      toast.error('Failed to save template')
+    } finally {
+      setSavingTemplate(false)
+    }
+  }
+
+  const handleResetTemplate = async (type) => {
+    if (!confirm('Reset this template to default?')) return
+    try {
+      const res = await api.post('/admin/savings/email-templates/reset', { type })
+      setSavingsTemplates(prev => ({ ...prev, [type]: res.data.template }))
+      toast.success('Template reset to default')
+    } catch (err) {
+      toast.error('Failed to reset template')
+    }
   }
 
   const handleSave = async () => {
@@ -573,10 +628,147 @@ export default function AdminSettings() {
                   ))}
                 </div>
               </div>
+
+              {/* Savings Email Templates */}
+              <div className="card">
+                <div className="flex items-center gap-2 mb-1">
+                  <PiggyBank size={18} className="text-primary-600" />
+                  <h3 className="text-sm font-medium text-text">Savings Email Templates</h3>
+                </div>
+                <p className="text-xs text-text-muted mb-4">Customize email templates for savings notifications with shortcodes</p>
+                
+                {/* Shortcodes Reference */}
+                <div className="bg-muted/50 border border-border rounded-lg p-3 mb-4">
+                  <div className="flex items-center gap-2 text-xs text-text-muted mb-2">
+                    <Code size={14} />
+                    <span className="font-medium">Available Shortcodes:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(savingsShortcodes).map(([code, desc]) => (
+                      <span key={code} className="text-xs bg-white px-2 py-1 rounded border" title={desc}>
+                        {code}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {[
+                    { type: 'savings_new', name: 'New Savings', desc: 'When customer creates savings' },
+                    { type: 'savings_withdrawal', name: 'Withdrawal', desc: 'When customer withdraws' },
+                    { type: 'savings_matured', name: 'Maturity', desc: 'When lock period ends' },
+                    { type: 'savings_deposit', name: 'Deposit', desc: 'When customer adds funds' },
+                  ].map((item) => (
+                    <div key={item.type} className="flex items-center justify-between p-3 border border-border rounded-lg hover:border-primary-300 transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
+                          <PiggyBank size={18} />
+                        </div>
+                        <div>
+                          <strong className="text-text text-sm">{item.name}</strong>
+                          <p className="text-xs text-text-muted">{item.desc}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openTemplateEditor(item.type, item.name)}
+                          className="btn btn-outline btn-sm"
+                        >
+                          <Edit2 size={14} /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleResetTemplate(item.type)}
+                          className="btn btn-outline btn-sm text-orange-600 hover:bg-orange-50"
+                          title="Reset to default"
+                        >
+                          <RotateCcw size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Template Editor Modal */}
+      {editingTemplate && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface rounded-2xl w-full max-w-4xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-text">
+                Edit {editingTemplate.name} Template
+              </h2>
+              <button onClick={() => setEditingTemplate(null)} className="text-text-muted hover:text-text">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Shortcodes Reference */}
+            <div className="bg-muted/50 border border-border rounded-lg p-3 mb-4">
+              <div className="flex items-center gap-2 text-xs text-text-muted mb-2">
+                <Code size={14} />
+                <span className="font-medium">Shortcodes you can use:</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                {Object.entries(savingsShortcodes).map(([code, desc]) => (
+                  <div key={code} className="flex items-center gap-2">
+                    <code className="bg-white px-1 py-0.5 rounded border text-primary-600">{code}</code>
+                    <span className="text-text-muted">{desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="form-label">Email Subject</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={templateForm.subject}
+                  onChange={(e) => setTemplateForm(prev => ({ ...prev, subject: e.target.value }))}
+                  placeholder="e.g., Your Savings Plan is Active! 🎉"
+                />
+              </div>
+              <div>
+                <label className="form-label">Email Body</label>
+                <div className="bg-white rounded-lg border border-border">
+                  <ReactQuill
+                    theme="snow"
+                    value={templateForm.template}
+                    onChange={(content) => setTemplateForm(prev => ({ ...prev, template: content }))}
+                    modules={{
+                      toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'align': [] }],
+                        ['link', 'image'],
+                        ['clean']
+                      ]
+                    }}
+                    style={{ minHeight: '300px' }}
+                  />
+                </div>
+                <p className="text-xs text-text-muted mt-2">Use shortcodes like {'{user_name}'} in your content. They will be replaced with actual values.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button onClick={() => setEditingTemplate(null)} className="btn btn-outline flex-1">
+                Cancel
+              </button>
+              <button onClick={handleSaveTemplate} disabled={savingTemplate} className="btn btn-primary flex-1">
+                {savingTemplate ? <Loader2 className="animate-spin" size={18} /> : <><Save size={16} /> Save Template</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   )
 }

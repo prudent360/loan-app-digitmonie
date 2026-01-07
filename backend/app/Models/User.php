@@ -53,6 +53,11 @@ class User extends Authenticatable
         return $this->hasOne(Wallet::class);
     }
 
+    public function userSavings()
+    {
+        return $this->hasMany(UserSaving::class);
+    }
+
     // Role-based access control
     public function roles(): BelongsToMany
     {

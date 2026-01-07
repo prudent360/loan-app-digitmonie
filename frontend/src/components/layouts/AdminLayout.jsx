@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { Wallet, LayoutDashboard, Users, FileText, Upload, Settings, LogOut, Menu, X, Shield, CreditCard, Phone, Receipt } from 'lucide-react'
+import { Wallet, LayoutDashboard, Users, FileText, Upload, Settings, LogOut, Menu, X, Shield, CreditCard, PiggyBank } from 'lucide-react'
 import { useState } from 'react'
 
 export default function AdminLayout({ children }) {
@@ -14,8 +14,8 @@ export default function AdminLayout({ children }) {
     { to: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/admin/users', icon: Users, label: 'Users' },
     { to: '/admin/loans', icon: FileText, label: 'Loan Applications' },
+    { to: '/admin/savings', icon: PiggyBank, label: 'Savings Plans' },
     { to: '/admin/payments', icon: CreditCard, label: 'Payments' },
-    { to: '/admin/bills', icon: Phone, label: 'Bill Transactions' },
     { to: '/admin/wallets', icon: Wallet, label: 'Wallets' },
     { to: '/admin/kyc', icon: Upload, label: 'KYC Review' },
     { to: '/admin/roles', icon: Shield, label: 'Roles & Access' },

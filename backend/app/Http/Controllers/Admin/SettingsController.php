@@ -119,4 +119,17 @@ class SettingsController extends Controller
             'logo_url' => $logoUrl,
         ]);
     }
+
+    public function getActiveGateway()
+    {
+        $gateways = Setting::getValue('payment_gateways', [
+            'active_gateway' => 'paystack',
+            'mode' => 'test'
+        ]);
+        
+        return response()->json([
+            'gateway' => $gateways['active_gateway'] ?? 'paystack',
+            'mode' => $gateways['mode'] ?? 'test'
+        ]);
+    }
 }

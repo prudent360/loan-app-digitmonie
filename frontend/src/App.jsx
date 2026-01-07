@@ -16,8 +16,7 @@ import KYCUpload from './pages/customer/KYCUpload'
 import Profile from './pages/customer/Profile'
 import PaymentCallback from './pages/customer/PaymentCallback'
 import PaymentHistory from './pages/customer/PaymentHistory'
-import VirtualCards from './pages/customer/VirtualCards'
-import BillPayments from './pages/customer/BillPayments'
+import Savings from './pages/customer/Savings'
 import Wallet from './pages/customer/Wallet'
 
 // Admin Pages
@@ -28,7 +27,7 @@ import AdminLoans from './pages/admin/Loans'
 import AdminKYC from './pages/admin/KYCReview'
 import AdminSettings from './pages/admin/Settings'
 import AdminRoles from './pages/admin/Roles'
-import BillTransactions from './pages/admin/BillTransactions'
+import AdminSavingsPlans from './pages/admin/SavingsPlans'
 import AdminWallets from './pages/admin/Wallets'
 import AdminPayments from './pages/admin/Payments'
 
@@ -92,8 +91,7 @@ function AppRoutes() {
       <Route path="/profile" element={<ProtectedRoute requiredRole="customer"><Profile /></ProtectedRoute>} />
       <Route path="/payments" element={<ProtectedRoute requiredRole="customer"><PaymentHistory /></ProtectedRoute>} />
       <Route path="/payment/callback" element={<ProtectedRoute requiredRole="customer"><PaymentCallback /></ProtectedRoute>} />
-      <Route path="/cards" element={<ProtectedRoute requiredRole="customer"><VirtualCards /></ProtectedRoute>} />
-      <Route path="/bills" element={<ProtectedRoute requiredRole="customer"><BillPayments /></ProtectedRoute>} />
+      <Route path="/savings" element={<ProtectedRoute requiredRole="customer"><Savings /></ProtectedRoute>} />
       <Route path="/wallet" element={<ProtectedRoute requiredRole="customer"><Wallet /></ProtectedRoute>} />
       
       {/* Admin Routes */}
@@ -101,9 +99,9 @@ function AppRoutes() {
       <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
       <Route path="/admin/users/:id" element={<ProtectedRoute requiredRole="admin"><UserDetail /></ProtectedRoute>} />
       <Route path="/admin/loans" element={<ProtectedRoute requiredRole="admin"><AdminLoans /></ProtectedRoute>} />
+      <Route path="/admin/savings" element={<ProtectedRoute requiredRole="admin"><AdminSavingsPlans /></ProtectedRoute>} />
       <Route path="/admin/kyc" element={<ProtectedRoute requiredRole="admin"><AdminKYC /></ProtectedRoute>} />
       <Route path="/admin/payments" element={<ProtectedRoute requiredRole="admin"><AdminPayments /></ProtectedRoute>} />
-      <Route path="/admin/bills" element={<ProtectedRoute requiredRole="admin"><BillTransactions /></ProtectedRoute>} />
       <Route path="/admin/wallets" element={<ProtectedRoute requiredRole="admin"><AdminWallets /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
       <Route path="/admin/roles" element={<ProtectedRoute requiredRole="admin"><AdminRoles /></ProtectedRoute>} />
