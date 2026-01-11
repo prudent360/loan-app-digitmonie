@@ -17,6 +17,7 @@ export default function AdminLayout({ children }) {
     { to: '/admin/savings', icon: PiggyBank, label: 'Savings Plans' },
     { to: '/admin/payments', icon: CreditCard, label: 'Payments' },
     { to: '/admin/wallets', icon: Wallet, label: 'Wallets' },
+    { to: '/admin/transfers', icon: FileText, label: 'Transfers' },
     { to: '/admin/kyc', icon: Upload, label: 'KYC Review' },
     { to: '/admin/roles', icon: Shield, label: 'Roles & Access' },
     { to: '/admin/settings', icon: Settings, label: 'Settings' },

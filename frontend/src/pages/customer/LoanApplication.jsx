@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import CustomerLayout from '../../components/layouts/CustomerLayout'
 import { useToast } from '../../context/ToastContext'
 import { loanSettingsAPI, loanAPI, paymentAPI } from '../../services/api'
-import { ArrowLeft, ArrowRight, Calculator, CheckCircle2, Loader2, CreditCard } from 'lucide-react'
+import api from '../../services/api'
+import { ArrowLeft, ArrowRight, Calculator, CheckCircle2, Loader2, CreditCard, AlertCircle } from 'lucide-react'
 
 const loanPurposes = ['Business Expansion', 'Education', 'Medical Emergency', 'Home Renovation', 'Vehicle Purchase', 'Debt Consolidation', 'Personal', 'Other']
 
@@ -15,6 +16,11 @@ export default function LoanApplication() {
   const [formData, setFormData] = useState({ amount: 500000, tenure_months: 12, purpose: '', purpose_details: '', employment_type: '', monthly_income: '', bank_name: '', account_number: '' })
   const [createdLoan, setCreatedLoan] = useState(null)
   const [payingFee, setPayingFee] = useState(false)
+  const [banks, setBanks] = useState([])
+  const [selectedBankCode, setSelectedBankCode] = useState('')
+  const [accountName, setAccountName] = useState('')
+  const [verifyingAccount, setVerifyingAccount] = useState(false)
+  const [verificationError, setVerificationError] = useState('')
   
   const toast = useToast()
   const navigate = useNavigate()
@@ -34,7 +40,63 @@ export default function LoanApplication() {
       }
     }
     loadSettings()
+
+    // Fetch banks
+    const loadBanks = async () => {
+      try {
+        const res = await api.get('/banks')
+        setBanks(res.data.banks || [])
+      } catch (err) {
+        console.error('Failed to load banks:', err)
+      }
+    }
+    loadBanks()
   }, [])
+
+  // Auto-verify account when we have bank code and 10-digit account number
+  useEffect(() => {
+    const verifyAccount = async () => {
+      if (!selectedBankCode || formData.account_number.length !== 10) {
+        setAccountName('')
+        setVerificationError('')
+        return
+      }
+
+      setVerifyingAccount(true)
+      setVerificationError('')
+      setAccountName('')
+
+      try {
+        const res = await api.post('/banks/resolve', {
+          account_number: formData.account_number,
+          bank_code: selectedBankCode,
+        })
+        if (res.data.success && res.data.account_name) {
+          setAccountName(res.data.account_name)
+        } else {
+          setVerificationError('Could not verify account')
+        }
+      } catch (err) {
+        setVerificationError(err.response?.data?.message || 'Verification failed')
+      } finally {
+        setVerifyingAccount(false)
+      }
+    }
+
+    // Debounce the verification
+    const timer = setTimeout(verifyAccount, 500)
+    return () => clearTimeout(timer)
+  }, [selectedBankCode, formData.account_number])
+
+  // Handle bank selection
+  const handleBankChange = (e) => {
+    const bankName = e.target.value
+    const bank = banks.find(b => b.name === bankName)
+    setFormData(prev => ({ ...prev, bank_name: bankName }))
+    setSelectedBankCode(bank?.code || '')
+    setAccountName('')
+    setVerificationError('')
+  }
 
   const interestRate = settings.default_interest_rate
   const adminFeePercent = settings.admin_fee || 0
@@ -106,7 +168,7 @@ export default function LoanApplication() {
 
   const isStep1Valid = formData.amount >= settings.min_amount && formData.tenure_months >= settings.min_tenure
   const isStep2Valid = formData.purpose && formData.employment_type && formData.monthly_income
-  const isStep3Valid = formData.bank_name && formData.account_number
+  const isStep3Valid = formData.bank_name && formData.account_number.length === 10 && accountName
 
   if (settingsLoading) {
     return <CustomerLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-primary-600" size={32} /></div></CustomerLayout>
@@ -232,15 +294,43 @@ export default function LoanApplication() {
 
             <div className="form-group">
               <label className="form-label">Bank Name</label>
-              <select name="bank_name" className="form-input form-select" value={formData.bank_name} onChange={handleChange}>
+              <select name="bank_name" className="form-input form-select" value={formData.bank_name} onChange={handleBankChange}>
                 <option value="">Select bank</option>
-                {['Access Bank', 'GTBank', 'First Bank', 'UBA', 'Zenith Bank'].map(b => <option key={b} value={b}>{b}</option>)}
+                {banks.map(b => <option key={b.code} value={b.name}>{b.name}</option>)}
               </select>
             </div>
 
             <div className="form-group">
               <label className="form-label">Account Number</label>
-              <input type="text" name="account_number" className="form-input" placeholder="10-digit account number" maxLength={10} value={formData.account_number} onChange={handleChange} />
+              <input 
+                type="text" 
+                name="account_number" 
+                className="form-input" 
+                placeholder="10-digit account number" 
+                maxLength={10} 
+                value={formData.account_number} 
+                onChange={handleChange} 
+              />
+              
+              {/* Verification Status */}
+              {verifyingAccount && (
+                <div className="flex items-center gap-2 mt-2 text-sm text-text-muted">
+                  <Loader2 size={14} className="animate-spin" />
+                  Verifying account...
+                </div>
+              )}
+              {accountName && (
+                <div className="flex items-center gap-2 mt-2 text-sm text-green-600 bg-green-50 p-2 rounded-lg">
+                  <CheckCircle2 size={16} />
+                  <span className="font-medium">{accountName}</span>
+                </div>
+              )}
+              {verificationError && (
+                <div className="flex items-center gap-2 mt-2 text-sm text-red-600 bg-red-50 p-2 rounded-lg">
+                  <AlertCircle size={16} />
+                  {verificationError}
+                </div>
+              )}
             </div>
 
             <div className="bg-muted rounded-lg p-4 mb-6 text-sm">

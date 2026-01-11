@@ -58,6 +58,12 @@ class User extends Authenticatable
         return $this->hasMany(UserSaving::class);
     }
 
+    public function transferRequests()
+    {
+        return $this->hasMany(TransferRequest::class);
+    }
+
+
     // Role-based access control
     public function roles(): BelongsToMany
     {

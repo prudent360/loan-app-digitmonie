@@ -30,6 +30,8 @@ import AdminRoles from './pages/admin/Roles'
 import AdminSavingsPlans from './pages/admin/SavingsPlans'
 import AdminWallets from './pages/admin/Wallets'
 import AdminPayments from './pages/admin/Payments'
+import AdminTransfers from './pages/admin/Transfers'
+import AdminLoanDetails from './pages/admin/LoanDetails'
 
 // Protected Route Component
 function ProtectedRoute({ children, requiredRole }) {
@@ -99,10 +101,12 @@ function AppRoutes() {
       <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
       <Route path="/admin/users/:id" element={<ProtectedRoute requiredRole="admin"><UserDetail /></ProtectedRoute>} />
       <Route path="/admin/loans" element={<ProtectedRoute requiredRole="admin"><AdminLoans /></ProtectedRoute>} />
+      <Route path="/admin/loans/:id" element={<ProtectedRoute requiredRole="admin"><AdminLoanDetails /></ProtectedRoute>} />
       <Route path="/admin/savings" element={<ProtectedRoute requiredRole="admin"><AdminSavingsPlans /></ProtectedRoute>} />
       <Route path="/admin/kyc" element={<ProtectedRoute requiredRole="admin"><AdminKYC /></ProtectedRoute>} />
       <Route path="/admin/payments" element={<ProtectedRoute requiredRole="admin"><AdminPayments /></ProtectedRoute>} />
       <Route path="/admin/wallets" element={<ProtectedRoute requiredRole="admin"><AdminWallets /></ProtectedRoute>} />
+      <Route path="/admin/transfers" element={<ProtectedRoute requiredRole="admin"><AdminTransfers /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
       <Route path="/admin/roles" element={<ProtectedRoute requiredRole="admin"><AdminRoles /></ProtectedRoute>} />
       

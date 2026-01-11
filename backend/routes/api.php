@@ -43,6 +43,12 @@ Route::get('/logo', [SettingsController::class, 'getLogo']);
 // Get active payment gateway (public)
 Route::get('/settings/active-gateway', [SettingsController::class, 'getActiveGateway']);
 
+// Get Nigerian banks (public)
+Route::get('/banks', [\App\Http\Controllers\BankController::class, 'index']);
+
+// Verify bank account (public)
+Route::post('/banks/resolve', [\App\Http\Controllers\BankController::class, 'resolveAccount']);
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Auth
@@ -115,6 +121,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/savings/{id}', [\App\Http\Controllers\Customer\SavingsController::class, 'show']);
         Route::post('/savings/{id}/withdraw', [\App\Http\Controllers\Customer\SavingsController::class, 'withdraw']);
         Route::post('/savings/{id}/add-funds', [\App\Http\Controllers\Customer\SavingsController::class, 'addFunds']);
+
+        // Bank Transfer Requests
+        Route::get('/transfers', [\App\Http\Controllers\Customer\TransferController::class, 'index']);
+        Route::post('/transfers', [\App\Http\Controllers\Customer\TransferController::class, 'store']);
     });
 
     // Admin routes - require any admin role
@@ -160,6 +170,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // KYC - require manage_kyc permission
         Route::middleware('permission:manage_kyc')->group(function () {
             Route::get('/kyc', [AdminKycController::class, 'index']);
+            Route::get('/kyc/{document}/document', [AdminKycController::class, 'viewDocument']);
+            Route::get('/kyc/{document}/download', [AdminKycController::class, 'downloadDocument']);
             Route::post('/kyc/{document}/approve', [AdminKycController::class, 'approve']);
             Route::post('/kyc/{document}/reject', [AdminKycController::class, 'reject']);
         });
@@ -194,5 +206,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/savings/{id}', [\App\Http\Controllers\Admin\SavingsController::class, 'update']);
         Route::delete('/savings/{id}', [\App\Http\Controllers\Admin\SavingsController::class, 'destroy']);
         Route::post('/savings/{id}/toggle', [\App\Http\Controllers\Admin\SavingsController::class, 'toggleStatus']);
+
+        // Bank Transfer Requests - admin management
+        Route::get('/transfers', [\App\Http\Controllers\Admin\TransferController::class, 'index']);
+        Route::post('/transfers/{transferRequest}/approve', [\App\Http\Controllers\Admin\TransferController::class, 'approve']);
+        Route::post('/transfers/{transferRequest}/reject', [\App\Http\Controllers\Admin\TransferController::class, 'reject']);
+
+        // Loan Timeline Steps - admin management
+        Route::get('/loans/{loan}/timeline', [\App\Http\Controllers\Admin\LoanTimelineController::class, 'index']);
+        Route::put('/loans/{loan}/timeline/{step}', [\App\Http\Controllers\Admin\LoanTimelineController::class, 'update']);
+        Route::post('/loans/{loan}/timeline/{step}/complete', [\App\Http\Controllers\Admin\LoanTimelineController::class, 'complete']);
+        Route::post('/loans/{loan}/timeline/reset', [\App\Http\Controllers\Admin\LoanTimelineController::class, 'reset']);
     });
 });

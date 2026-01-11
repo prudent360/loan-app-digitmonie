@@ -40,7 +40,54 @@ export default function CustomerLoans() {
   const getStatusBadge = (s) => ({ pending: 'badge badge-warning', active: 'badge badge-success', completed: 'badge badge-info', rejected: 'badge badge-error', approved: 'badge badge-success', disbursed: 'badge badge-info' }[s] || 'badge')
 
   if (loading) {
-    return <CustomerLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-primary-600" size={32} /></div></CustomerLayout>
+    return (
+      <CustomerLayout>
+        <div className="space-y-6">
+          {/* Header Skeleton */}
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="animate-pulse bg-gray-200 rounded w-32 h-7 mb-2" />
+              <div className="animate-pulse bg-gray-200 rounded w-56 h-4" />
+            </div>
+            <div className="animate-pulse bg-gray-200 rounded-lg w-36 h-10" />
+          </div>
+          
+          {/* Filters Skeleton */}
+          <div className="card flex items-center gap-4">
+            <div className="animate-pulse bg-gray-200 rounded-lg flex-1 h-10" />
+            <div className="flex gap-2">
+              {[1,2,3,4,5].map(i => <div key={i} className="animate-pulse bg-gray-200 rounded-lg w-20 h-8" />)}
+            </div>
+          </div>
+          
+          {/* Table Skeleton */}
+          <div className="card p-0">
+            <table className="table">
+              <thead>
+                <tr>
+                  {['Purpose','Amount','Interest','Tenure','Date','Status',''].map(h => (
+                    <th key={h}><div className="animate-pulse bg-gray-200 rounded w-16 h-4" /></th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[1,2,3,4,5].map(i => (
+                  <tr key={i}>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-28 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-24 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-16 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-16 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-20 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded-full w-16 h-6" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-10 h-4" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </CustomerLayout>
+    )
   }
 
   return (

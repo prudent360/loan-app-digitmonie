@@ -88,4 +88,52 @@ class KycController extends Controller
             $user->update(['kyc_status' => 'verified']);
         }
     }
+
+    /**
+     * View/Download a KYC document
+     */
+    public function viewDocument(KycDocument $document)
+    {
+        if (!$document->file_path) {
+            return response()->json(['message' => 'Document file not found'], 404);
+        }
+
+        // Check if file exists in storage
+        $disk = 'public'; // or 'local' depending on your setup
+        
+        if (!\Storage::disk($disk)->exists($document->file_path)) {
+            return response()->json(['message' => 'File not found on disk'], 404);
+        }
+
+        $filePath = \Storage::disk($disk)->path($document->file_path);
+        $mimeType = $document->mime_type ?? mime_content_type($filePath);
+        $fileName = $document->file_name ?? basename($document->file_path);
+
+        return response()->file($filePath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . $fileName . '"',
+        ]);
+    }
+
+    /**
+     * Download a KYC document
+     */
+    public function downloadDocument(KycDocument $document)
+    {
+        if (!$document->file_path) {
+            return response()->json(['message' => 'Document file not found'], 404);
+        }
+
+        $disk = 'public';
+        
+        if (!\Storage::disk($disk)->exists($document->file_path)) {
+            return response()->json(['message' => 'File not found on disk'], 404);
+        }
+
+        $filePath = \Storage::disk($disk)->path($document->file_path);
+        $fileName = $document->file_name ?? basename($document->file_path);
+        
+        return response()->download($filePath, $fileName);
+    }
 }
+

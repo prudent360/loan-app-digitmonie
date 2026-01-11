@@ -193,6 +193,64 @@ export default function LoanDetails() {
           </div>
         )}
 
+        {/* Avilegal-style Vertical Progress Timeline */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Application Progress</h3>
+          <div className="relative">
+            {(loan.timeline || []).map((step, idx) => (
+              <div key={step.step} className="flex gap-4 pb-6 last:pb-0">
+                {/* Timeline line and icon */}
+                <div className="flex flex-col items-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    step.status === 'completed' ? 'bg-green-100 text-green-600' :
+                    step.status === 'in_progress' ? 'bg-blue-100 text-blue-600 ring-2 ring-blue-500' :
+                    step.status === 'failed' ? 'bg-red-100 text-red-600' :
+                    'bg-gray-100 text-gray-400'
+                  }`}>
+                    {step.status === 'completed' ? <CheckCircle2 size={20} /> :
+                     step.status === 'in_progress' ? <Clock size={20} className="animate-pulse" /> :
+                     step.status === 'failed' ? <X size={20} /> :
+                     <span className="text-sm font-bold">{step.step}</span>}
+                  </div>
+                  {idx < (loan.timeline?.length || 0) - 1 && (
+                    <div className={`w-0.5 flex-1 mt-2 ${
+                      step.status === 'completed' ? 'bg-green-300' : 'bg-gray-200'
+                    }`} />
+                  )}
+                </div>
+                {/* Content */}
+                <div className="pt-2 pb-4 flex-1">
+                  <h4 className={`font-semibold ${
+                    step.status === 'completed' ? 'text-green-700' :
+                    step.status === 'in_progress' ? 'text-blue-600' :
+                    step.status === 'failed' ? 'text-red-600' :
+                    'text-gray-400'
+                  }`}>{step.title}</h4>
+                  <p className="text-sm text-text-muted">{step.description}</p>
+                  {step.date && (
+                    <p className="text-xs text-green-600 mt-1">Completed: {step.date}</p>
+                  )}
+                  {step.admin_notes && (
+                    <p className="text-xs text-gray-500 mt-1 italic">Note: {step.admin_notes}</p>
+                  )}
+                  {step.status === 'in_progress' && (
+                    <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                      Currently Processing
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Rejection Message */}
+          {loan.status === 'rejected' && loan.rejection_reason && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800"><strong>Rejection Reason:</strong> {loan.rejection_reason}</p>
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {/* Loan Overview */}
           <div className="lg:col-span-2 card">
@@ -241,20 +299,6 @@ export default function LoanDetails() {
             <div className="space-y-3 text-sm">
               {[['Principal Amount', formatCurrency(loan.amount)], ['Total Interest', formatCurrency(loan.total_interest || 0)], ['Total Payable', formatCurrency(loan.total_payable || 0)], ['Purpose', loan.purpose_details || loan.purpose || '-']].map(([l, v]) => (
                 <div key={l} className="flex justify-between"><span className="text-text-muted">{l}</span><span className="font-medium text-text">{v}</span></div>
-              ))}
-            </div>
-          </div>
-          <div className="card">
-            <h3 className="text-sm font-medium text-text mb-4">Timeline</h3>
-            <div className="space-y-4">
-              {[['Submitted', loan.created_at, true], ['Approved', loan.approved_at, !!loan.approved_at], ['Disbursed', loan.disbursed_at, !!loan.disbursed_at]].map(([label, date, done]) => (
-                <div key={label} className="flex items-center gap-3 text-sm">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${done ? 'bg-primary-600 text-white' : 'bg-muted text-text-muted'}`}>
-                    {done ? <CheckCircle2 size={14} /> : <Clock size={14} />}
-                  </div>
-                  <div className="flex-1"><p className="font-medium text-text">{label}</p></div>
-                  <span className="text-text-muted">{date ? formatDate(date) : '-'}</span>
-                </div>
               ))}
             </div>
           </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import CustomerLayout from '../../components/layouts/CustomerLayout'
 import api, { walletAPI } from '../../services/api'
-import { Wallet as WalletIcon, Plus, ArrowUpRight, ArrowDownLeft, Loader2, X, TrendingUp, TrendingDown, History, RefreshCw, ExternalLink } from 'lucide-react'
+import { Wallet as WalletIcon, Plus, ArrowUpRight, ArrowDownLeft, Loader2, X, TrendingUp, TrendingDown, History, RefreshCw, ExternalLink, Building2, CreditCard, Upload, CheckCircle, Clock, XCircle } from 'lucide-react'
 
 export default function Wallet() {
   const [searchParams] = useSearchParams()
@@ -15,6 +15,13 @@ export default function Wallet() {
   const [funding, setFunding] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const [activeGateway, setActiveGateway] = useState('paystack')
+  
+  // Bank transfer states
+  const [fundMethod, setFundMethod] = useState('card') // 'card' or 'transfer'
+  const [transferRef, setTransferRef] = useState('')
+  const [transferProof, setTransferProof] = useState(null)
+  const [transferRequests, setTransferRequests] = useState([])
+  const [submittingTransfer, setSubmittingTransfer] = useState(false)
 
   useEffect(() => {
     loadWallet()
@@ -39,18 +46,57 @@ export default function Wallet() {
 
   const loadWallet = async () => {
     try {
-      const [walletRes, settingsRes] = await Promise.all([
+      const [walletRes, settingsRes, transfersRes] = await Promise.all([
         walletAPI.getBalance(),
-        api.get('/settings/active-gateway').catch(() => ({ data: { gateway: 'paystack' } }))
+        api.get('/settings/active-gateway').catch(() => ({ data: { gateway: 'paystack' } })),
+        api.get('/customer/transfers').catch(() => ({ data: { data: [] } }))
       ])
       setWallet(walletRes.data.wallet)
       setSummary(walletRes.data.summary)
       setTransactions(walletRes.data.recent_transactions || [])
       setActiveGateway(settingsRes.data.gateway || 'paystack')
+      setTransferRequests(transfersRes.data.data || [])
     } catch (err) {
       console.error('Failed to load wallet:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleBankTransfer = async (e) => {
+    e.preventDefault()
+    if (!fundAmount || parseFloat(fundAmount) < 100) {
+      alert('Minimum amount is ₦100')
+      return
+    }
+    if (!transferRef.trim()) {
+      alert('Please enter your transfer reference')
+      return
+    }
+
+    setSubmittingTransfer(true)
+    try {
+      const formData = new FormData()
+      formData.append('amount', fundAmount)
+      formData.append('reference', transferRef)
+      if (transferProof) {
+        formData.append('proof', transferProof)
+      }
+
+      const res = await api.post('/customer/transfers', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      
+      alert(res.data.message || 'Transfer request submitted!')
+      setShowFundModal(false)
+      setFundAmount('')
+      setTransferRef('')
+      setTransferProof(null)
+      loadWallet()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to submit transfer')
+    } finally {
+      setSubmittingTransfer(false)
     }
   }
 
@@ -174,25 +220,13 @@ export default function Wallet() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <button onClick={() => setShowFundModal(true)} className="card text-center py-6 hover:border-primary-300 transition-all group">
             <div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
               <ArrowDownLeft size={24} />
             </div>
             <p className="font-medium text-text">Fund Wallet</p>
           </button>
-          <a href="/bills" className="card text-center py-6 hover:border-primary-300 transition-all group">
-            <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <ArrowUpRight size={24} />
-            </div>
-            <p className="font-medium text-text">Pay Bills</p>
-          </a>
-          <a href="/cards" className="card text-center py-6 hover:border-primary-300 transition-all group">
-            <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <ExternalLink size={24} />
-            </div>
-            <p className="font-medium text-text">Fund Card</p>
-          </a>
           <button onClick={loadWallet} className="card text-center py-6 hover:border-primary-300 transition-all group">
             <div className="w-12 h-12 bg-gray-100 text-gray-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
               <RefreshCw size={24} />
@@ -244,56 +278,160 @@ export default function Wallet() {
 
         {/* Fund Modal */}
         {showFundModal && (
-          <div className="modal-overlay" onClick={() => setShowFundModal(false)}>
-            <div className="modal-content max-w-md" onClick={e => e.stopPropagation()}>
+          <div className="modal-overlay">
+            <div className="modal-content max-w-lg">
               <div className="modal-header">
                 <h3>Fund Wallet</h3>
-                <button onClick={() => setShowFundModal(false)}><X size={20} /></button>
+                <button onClick={() => { setShowFundModal(false); setFundMethod('card'); }}><X size={20} /></button>
               </div>
-              <form onSubmit={handleFundWallet}>
-                <div className="modal-body space-y-4">
-                  <div className="bg-muted p-4 rounded-lg text-center">
-                    <p className="text-sm text-text-muted">Current Balance</p>
-                    <p className="text-2xl font-bold text-text">{wallet?.formatted_balance || '₦0.00'}</p>
-                  </div>
-                  
-                  <div>
-                    <label className="form-label">Amount to Fund (₦)</label>
-                    <input 
-                      type="number" 
-                      className="form-input text-xl font-semibold"
-                      placeholder="₦0.00"
-                      min="100"
-                      max="1000000"
-                      value={fundAmount}
-                      onChange={e => setFundAmount(e.target.value)}
-                      required
-                    />
-                    <p className="text-xs text-text-muted mt-1">Minimum: ₦100 | Maximum: ₦1,000,000</p>
-                  </div>
 
-                  {/* Quick amounts */}
-                  <div className="grid grid-cols-4 gap-2">
-                    {[500, 1000, 2000, 5000].map(amt => (
-                      <button 
-                        key={amt} 
-                        type="button"
-                        onClick={() => setFundAmount(String(amt))}
-                        className={`py-2 rounded-lg text-sm font-medium transition-all ${fundAmount === String(amt) ? 'bg-primary-600 text-white' : 'bg-muted text-text-muted hover:text-text'}`}
-                      >
-                        ₦{amt.toLocaleString()}
-                      </button>
-                    ))}
+              {/* Tab Selector */}
+              <div className="flex border-b">
+                <button
+                  onClick={() => setFundMethod('card')}
+                  className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition-colors ${fundMethod === 'card' ? 'border-primary-600 text-primary-600' : 'border-transparent text-text-muted hover:text-text'}`}
+                >
+                  <CreditCard size={18} /> Card Payment
+                </button>
+                <button
+                  onClick={() => setFundMethod('transfer')}
+                  className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition-colors ${fundMethod === 'transfer' ? 'border-primary-600 text-primary-600' : 'border-transparent text-text-muted hover:text-text'}`}
+                >
+                  <Building2 size={18} /> Bank Transfer
+                </button>
+              </div>
+
+              {/* Card Payment Form */}
+              {fundMethod === 'card' && (
+                <form onSubmit={handleFundWallet}>
+                  <div className="modal-body space-y-4">
+                    <div className="bg-muted p-4 rounded-lg text-center">
+                      <p className="text-sm text-text-muted">Current Balance</p>
+                      <p className="text-2xl font-bold text-text">{wallet?.formatted_balance || '₦0.00'}</p>
+                    </div>
+                    
+                    <div>
+                      <label className="form-label">Amount to Fund (₦)</label>
+                      <input 
+                        type="number" 
+                        className="form-input text-xl font-semibold"
+                        placeholder="₦0.00"
+                        min="100"
+                        max="1000000"
+                        value={fundAmount}
+                        onChange={e => setFundAmount(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2">
+                      {[500, 1000, 2000, 5000].map(amt => (
+                        <button 
+                          key={amt} 
+                          type="button"
+                          onClick={() => setFundAmount(String(amt))}
+                          className={`py-2 rounded-lg text-sm font-medium transition-all ${fundAmount === String(amt) ? 'bg-primary-600 text-white' : 'bg-muted text-text-muted hover:text-text'}`}
+                        >
+                          ₦{amt.toLocaleString()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-outline" onClick={() => setShowFundModal(false)}>Cancel</button>
+                    <button type="submit" className="btn btn-primary" disabled={funding}>
+                      {funding ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+                      Pay with Card
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Bank Transfer Form */}
+              {fundMethod === 'transfer' && (
+                <form onSubmit={handleBankTransfer}>
+                  <div className="modal-body space-y-4">
+                    {/* Bank Details */}
+                    <div className="bg-gradient-to-r from-primary-50 to-blue-50 p-4 rounded-lg border border-primary-200">
+                      <p className="text-sm font-medium text-primary-700 mb-2">Transfer to this account:</p>
+                      <div className="space-y-1 text-sm">
+                        <p><span className="text-text-muted">Bank:</span> <strong>GTBank</strong></p>
+                        <p><span className="text-text-muted">Account Number:</span> <strong>0123456789</strong></p>
+                        <p><span className="text-text-muted">Account Name:</span> <strong>DigitMonie Ltd</strong></p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="form-label">Amount Transferred (₦)</label>
+                      <input 
+                        type="number" 
+                        className="form-input"
+                        placeholder="Enter amount"
+                        min="100"
+                        value={fundAmount}
+                        onChange={e => setFundAmount(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="form-label">Transfer Reference</label>
+                      <input 
+                        type="text" 
+                        className="form-input"
+                        placeholder="Enter your bank transfer reference"
+                        value={transferRef}
+                        onChange={e => setTransferRef(e.target.value)}
+                        required
+                      />
+                      <p className="text-xs text-text-muted mt-1">Find this in your bank app/receipt</p>
+                    </div>
+
+                    <div>
+                      <label className="form-label">Payment Proof (Optional)</label>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        className="form-input"
+                        onChange={e => setTransferProof(e.target.files[0])}
+                      />
+                      <p className="text-xs text-text-muted mt-1">Screenshot of your transfer receipt</p>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-outline" onClick={() => setShowFundModal(false)}>Cancel</button>
+                    <button type="submit" className="btn btn-primary" disabled={submittingTransfer}>
+                      {submittingTransfer ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
+                      Submit Transfer
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Transfer Requests History */}
+        {transferRequests.length > 0 && (
+          <div className="card">
+            <h2 className="text-lg font-semibold text-text mb-4">Bank Transfer Requests</h2>
+            <div className="space-y-3">
+              {transferRequests.slice(0, 5).map(tr => (
+                <div key={tr.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div>
+                    <p className="font-medium">₦{Number(tr.amount).toLocaleString()}</p>
+                    <p className="text-xs text-text-muted">Ref: {tr.reference}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {tr.status === 'pending' && <Clock size={16} className="text-amber-500" />}
+                    {tr.status === 'approved' && <CheckCircle size={16} className="text-green-500" />}
+                    {tr.status === 'rejected' && <XCircle size={16} className="text-red-500" />}
+                    <span className={`text-xs font-medium capitalize ${tr.status === 'approved' ? 'text-green-600' : tr.status === 'rejected' ? 'text-red-600' : 'text-amber-600'}`}>
+                      {tr.status}
+                    </span>
                   </div>
                 </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-outline" onClick={() => setShowFundModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary" disabled={funding}>
-                    {funding ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                    Fund Wallet
-                  </button>
-                </div>
-              </form>
+              ))}
             </div>
           </div>
         )}

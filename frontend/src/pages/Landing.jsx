@@ -2,8 +2,10 @@ import { Link } from 'react-router-dom'
 import { Wallet, Shield, Clock, TrendingUp, ArrowRight, CheckCircle2, Sparkles, BarChart3, CreditCard, Receipt, PiggyBank, Zap, Globe, Smartphone, Building, Wifi, Tv, Phone, Droplets, Lightbulb } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import api from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 export default function Landing() {
+  const { user } = useAuth()
   const [investmentAmount, setInvestmentAmount] = useState(500000)
   const [investmentPeriod, setInvestmentPeriod] = useState(12)
   const [logoUrl, setLogoUrl] = useState(null)
@@ -62,8 +64,14 @@ export default function Landing() {
             <a href="#how-it-works" className="text-sm text-text-muted hover:text-text">How it Works</a>
           </nav>
           <div className="flex items-center gap-3">
-            <Link to="/login" className="btn btn-outline btn-sm">Login</Link>
-            <Link to="/register" className="btn btn-primary btn-sm">Get Started</Link>
+            {user ? (
+              <Link to="/dashboard" className="btn btn-primary btn-sm">Go to Dashboard</Link>
+            ) : (
+              <>
+                <Link to="/login" className="btn btn-outline btn-sm">Login</Link>
+                <Link to="/register" className="btn btn-primary btn-sm">Get Started</Link>
+              </>
+            )}
           </div>
         </div>
       </header>

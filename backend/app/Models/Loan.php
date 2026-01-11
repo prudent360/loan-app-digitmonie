@@ -55,6 +55,11 @@ class Loan extends Model
         return $this->hasMany(Repayment::class);
     }
 
+    public function timelineSteps()
+    {
+        return $this->hasMany(LoanTimelineStep::class)->orderBy('step_number');
+    }
+
     // Calculate EMI
     public function getEmiAttribute()
     {
@@ -95,5 +100,90 @@ class Loan extends Model
             ->where('status', 'pending')
             ->orderBy('due_date')
             ->first();
+    }
+
+    /**
+     * Generate progress timeline based on loan status
+     */
+    public function getTimelineAttribute()
+    {
+        $timeline = [];
+        
+        // Step 1: Application Submitted
+        $timeline[] = [
+            'step' => 1,
+            'title' => 'Application Submitted',
+            'description' => 'Loan application received',
+            'status' => 'completed',
+            'date' => $this->created_at?->format('M d, Y H:i'),
+        ];
+        
+        // Step 2: Documents Under Review
+        $step2Status = 'pending';
+        if (in_array($this->status, ['pending_review', 'approved', 'disbursed', 'active', 'completed'])) {
+            $step2Status = 'completed';
+        } elseif ($this->status === 'pending' && $this->admin_fee_paid) {
+            $step2Status = 'in_progress';
+        } elseif ($this->status === 'rejected') {
+            $step2Status = 'failed';
+        }
+        $timeline[] = [
+            'step' => 2,
+            'title' => 'Documents Under Review',
+            'description' => 'Your documents are being verified',
+            'status' => $step2Status,
+            'date' => null,
+        ];
+        
+        // Step 3: Application Reviewed
+        $step3Status = 'pending';
+        if (in_array($this->status, ['approved', 'disbursed', 'active', 'completed'])) {
+            $step3Status = 'completed';
+        } elseif ($this->status === 'pending_review') {
+            $step3Status = 'in_progress';
+        } elseif ($this->status === 'rejected') {
+            $step3Status = 'failed';
+        }
+        $timeline[] = [
+            'step' => 3,
+            'title' => 'Application Reviewed',
+            'description' => $this->status === 'rejected' ? 'Application rejected: ' . $this->rejection_reason : 'Application under final review',
+            'status' => $step3Status,
+            'date' => null,
+        ];
+        
+        // Step 4: Loan Approved
+        $step4Status = 'pending';
+        if (in_array($this->status, ['approved', 'disbursed', 'active', 'completed'])) {
+            $step4Status = 'completed';
+        } elseif ($this->status === 'rejected') {
+            $step4Status = 'failed';
+        }
+        $timeline[] = [
+            'step' => 4,
+            'title' => 'Loan Approved',
+            'description' => 'Your loan has been approved',
+            'status' => $step4Status,
+            'date' => $this->approved_at?->format('M d, Y H:i'),
+        ];
+        
+        // Step 5: Disbursement
+        $step5Status = 'pending';
+        if (in_array($this->status, ['disbursed', 'active', 'completed'])) {
+            $step5Status = 'completed';
+        } elseif ($this->status === 'approved') {
+            $step5Status = 'in_progress';
+        } elseif ($this->status === 'rejected') {
+            $step5Status = 'failed';
+        }
+        $timeline[] = [
+            'step' => 5,
+            'title' => 'Loan Disbursed',
+            'description' => 'Funds transferred to your account',
+            'status' => $step5Status,
+            'date' => $this->disbursed_at?->format('M d, Y H:i'),
+        ];
+        
+        return $timeline;
     }
 }

@@ -39,11 +39,36 @@ class LoanController extends Controller
 
     public function show(Request $request, Loan $loan)
     {
-        if ($loan->user_id !== $request->user()->id) {
+        // Use loose comparison to handle int/string type mismatch
+        if ($loan->user_id != $request->user()->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         $loan->load('repayments');
+        
+        // Get timeline - use auto-generated as default, try database if available
+        $timelineSteps = $loan->timeline ?? [];
+        
+        try {
+            // Only try database if model class exists and table is populated
+            if (class_exists('\\App\\Models\\LoanTimelineStep')) {
+                $dbSteps = $loan->timelineSteps()->get();
+                if ($dbSteps->count() > 0) {
+                    $timelineSteps = $dbSteps->map(function ($step) {
+                        return [
+                            'step' => $step->step_number,
+                            'title' => $step->title,
+                            'description' => $step->description,
+                            'status' => $step->status,
+                            'date' => $step->completed_at?->format('M d, Y H:i'),
+                            'admin_notes' => $step->admin_notes,
+                        ];
+                    })->toArray();
+                }
+            }
+        } catch (\Exception $e) {
+            // Silent fail - use auto-generated timeline
+        }
         
         return response()->json([
             'id' => $loan->id,
@@ -55,6 +80,7 @@ class LoanController extends Controller
             'purpose' => $loan->purpose,
             'purpose_details' => $loan->purpose_details,
             'status' => $loan->status,
+            'rejection_reason' => $loan->rejection_reason,
             'emi' => round($loan->emi, 2),
             'total_payable' => round($loan->total_payable, 2),
             'total_interest' => round($loan->total_interest, 2),
@@ -65,6 +91,7 @@ class LoanController extends Controller
             'approved_at' => $loan->approved_at?->format('Y-m-d'),
             'disbursed_at' => $loan->disbursed_at?->format('Y-m-d'),
             'repayments' => $loan->repayments,
+            'timeline' => $timelineSteps,
         ]);
     }
 

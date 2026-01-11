@@ -27,11 +27,51 @@ class LoanController extends Controller
     {
         $loan->load(['user', 'repayments', 'approver']);
         
+        // Get user's KYC documents as loan documents
+        $documents = [];
+        if ($loan->user) {
+            $kycDocs = \App\Models\KycDocument::where('user_id', $loan->user_id)->get();
+            $documents = $kycDocs->map(function ($doc) {
+                return [
+                    'id' => $doc->id,
+                    'name' => $doc->document_type ?? 'Document',
+                    'type' => $doc->document_type,
+                    'status' => $doc->status,
+                    'url' => $doc->document_url ?? null,
+                    'created_at' => $doc->created_at,
+                ];
+            });
+        }
+        
         return response()->json([
-            'loan' => $loan,
-            'emi' => round($loan->emi, 2),
-            'total_payable' => round($loan->total_payable, 2),
-            'total_paid' => round($loan->total_paid, 2),
+            'id' => $loan->id,
+            'amount' => $loan->amount,
+            'interest_rate' => $loan->interest_rate,
+            'tenure_months' => $loan->tenure_months,
+            'purpose' => $loan->purpose,
+            'purpose_details' => $loan->purpose_details,
+            'status' => $loan->status,
+            'rejection_reason' => $loan->rejection_reason,
+            'bank_name' => $loan->bank_name,
+            'account_number' => $loan->account_number,
+            'monthly_income' => $loan->monthly_income,
+            'employment_type' => $loan->employment_type,
+            'admin_fee' => round($loan->admin_fee ?? 0, 2),
+            'admin_fee_paid' => $loan->admin_fee_paid ?? false,
+            'emi' => round($loan->emi ?? 0, 2),
+            'total_payable' => round($loan->total_payable ?? 0, 2),
+            'total_paid' => round($loan->total_paid ?? 0, 2),
+            'created_at' => $loan->created_at,
+            'approved_at' => $loan->approved_at,
+            'disbursed_at' => $loan->disbursed_at,
+            'user' => $loan->user ? [
+                'id' => $loan->user->id,
+                'name' => $loan->user->name,
+                'email' => $loan->user->email,
+                'phone' => $loan->user->phone,
+            ] : null,
+            'documents' => $documents,
+            'repayments' => $loan->repayments,
         ]);
     }
 

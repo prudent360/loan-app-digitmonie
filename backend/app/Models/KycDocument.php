@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Storage;
 
 class KycDocument extends Model
 {
@@ -26,6 +27,8 @@ class KycDocument extends Model
         'reviewed_at' => 'datetime',
     ];
 
+    protected $appends = ['file_url'];
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -35,4 +38,18 @@ class KycDocument extends Model
     {
         return $this->belongsTo(User::class, 'reviewed_by');
     }
+
+    /**
+     * Get the URL for viewing/downloading the document
+     */
+    public function getFileUrlAttribute()
+    {
+        if (!$this->file_path) {
+            return null;
+        }
+
+        // Return a URL to the admin document view endpoint
+        return url("/api/admin/kyc/{$this->id}/document");
+    }
 }
+

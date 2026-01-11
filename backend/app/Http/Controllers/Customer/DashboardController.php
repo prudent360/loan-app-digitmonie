@@ -12,7 +12,9 @@ class DashboardController extends Controller
         $user = $request->user();
         $loans = $user->loans;
 
-        $totalBorrowed = $loans->sum('amount');
+        // Only count loans that were actually disbursed (active, disbursed, or completed)
+        $disbursedLoans = $loans->whereIn('status', ['active', 'disbursed', 'completed']);
+        $totalBorrowed = $disbursedLoans->sum('amount');
         $totalPaid = $loans->sum(fn($loan) => $loan->total_paid);
         $activeLoans = $loans->where('status', 'active')->count();
         $completedLoans = $loans->where('status', 'completed')->count();

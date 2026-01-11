@@ -206,21 +206,36 @@ class PaymentController extends Controller
             return;
         }
 
-        // If linked to a specific repayment, mark it as paid
-        if ($payment->repayment_id) {
-            $repayment = Repayment::find($payment->repayment_id);
+        // Handle loan repayment
+        if ($loan && $payment->payment_type !== 'admin_fee') {
+            $repayment = null;
+            
+            // If linked to a specific repayment, use that
+            if ($payment->repayment_id) {
+                $repayment = Repayment::find($payment->repayment_id);
+            } else {
+                // Otherwise, find the next pending repayment for this loan
+                $repayment = $loan->repayments()
+                    ->where('status', 'pending')
+                    ->orderBy('due_date', 'asc')
+                    ->first();
+            }
+            
+            // Mark the repayment as paid
             if ($repayment) {
                 $repayment->update([
                     'status' => 'paid',
                     'paid_at' => now(),
                     'payment_reference' => $payment->reference,
                 ]);
+                
+                // Update payment with the repayment_id if it wasn't set
+                if (!$payment->repayment_id) {
+                    $payment->update(['repayment_id' => $repayment->id]);
+                }
             }
-        }
 
-        // Update loan total_paid (if loan tracks this)
-        if ($loan) {
-            // Check if all repayments are paid
+            // Check if all repayments are paid -> mark loan as completed
             $pendingCount = $loan->repayments()->where('status', 'pending')->count();
             if ($pendingCount === 0) {
                 $loan->update(['status' => 'completed']);
