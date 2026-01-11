@@ -35,23 +35,40 @@ export default function CustomerDashboard() {
           api.get('/customer/dashboard/stats').catch(() => ({ data: null }))
         ])
         
-        const loans = loansRes.data.data || loansRes.data.loans || loansRes.data || []
+        // Debug: Log the raw API responses
+        console.log('Loans API response:', loansRes.data)
+        console.log('Stats API response:', statsRes.data)
+        
+        // Handle different response formats - API returns array directly
+        let loans = []
+        if (Array.isArray(loansRes.data)) {
+          loans = loansRes.data
+        } else if (loansRes.data?.data && Array.isArray(loansRes.data.data)) {
+          loans = loansRes.data.data
+        } else if (loansRes.data?.loans && Array.isArray(loansRes.data.loans)) {
+          loans = loansRes.data.loans
+        }
+        
+        console.log('Parsed loans:', loans)
         setRecentLoans(loans.slice(0, 5))
 
         // Use stats from dedicated API if available, otherwise calculate from loans
         const apiStats = statsRes.data
         
-        // Calculate loan status counts
+        // Calculate loan status counts - include 'disbursed' as active
         const activeLoans = loans.filter(l => l.status === 'active' || l.status === 'disbursed')
         const pendingLoans = loans.filter(l => l.status === 'pending' || l.status === 'pending_review')
         const completedLoans = loans.filter(l => l.status === 'completed')
         
+        console.log('Active/Disbursed loans:', activeLoans.length, activeLoans)
+        
         // Savings total
         const savings = savingsRes.data.data || savingsRes.data || []
-        const totalSavings = savings.reduce((sum, s) => sum + Number(s.current_balance || 0), 0)
+        const totalSavings = Array.isArray(savings) ? savings.reduce((sum, s) => sum + Number(s.current_balance || 0), 0) : 0
         
         // Use API stats if available (more accurate), fallback to manual calculation
         if (apiStats && apiStats.totalBorrowed !== undefined) {
+          console.log('Using API stats:', apiStats)
           setStats({
             totalBorrowed: apiStats.totalBorrowed || 0,
             totalPaid: apiStats.totalPaid || 0,
@@ -63,9 +80,12 @@ export default function CustomerDashboard() {
           })
         } else {
           // Fallback: calculate manually from loans
+          console.log('Using manual calculation from loans')
           const totalBorrowed = loans.filter(l => ['active', 'disbursed', 'completed'].includes(l.status)).reduce((sum, l) => sum + Number(l.amount || 0), 0)
           const totalPaid = loans.reduce((sum, l) => sum + Number(l.total_paid || 0), 0)
           const outstandingBalance = activeLoans.reduce((sum, l) => sum + Number(l.remaining_balance || 0), 0)
+          
+          console.log('Calculated stats:', { totalBorrowed, totalPaid, outstandingBalance })
           
           setStats({
             totalBorrowed,
@@ -78,9 +98,10 @@ export default function CustomerDashboard() {
           })
         }
 
-        // Loan status pie chart
+        // Loan status pie chart - include 'disbursed' separately
         setLoanStatusData([
-          { name: 'Active', value: activeLoans.length, color: '#22c55e' },
+          { name: 'Disbursed', value: loans.filter(l => l.status === 'disbursed').length, color: '#3b82f6' },
+          { name: 'Active', value: loans.filter(l => l.status === 'active').length, color: '#22c55e' },
           { name: 'Pending', value: pendingLoans.length, color: '#f59e0b' },
           { name: 'Completed', value: completedLoans.length, color: '#8b5cf6' },
         ].filter(d => d.value > 0))
