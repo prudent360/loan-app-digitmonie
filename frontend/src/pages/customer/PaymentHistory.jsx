@@ -107,27 +107,29 @@ export default function PaymentHistory() {
               <p className="text-text-muted">No payment transactions yet</p>
             </div>
           ) : (
-            <table className="table">
-              <thead>
-                <tr><th>Date</th><th>Reference</th><th>Loan</th><th>Amount</th><th>Gateway</th><th>Status</th></tr>
-              </thead>
-              <tbody>
-                {payments.map((payment) => (
-                  <tr key={payment.id}>
-                    <td className="text-text-muted text-sm">{formatDateTime(payment.created_at)}</td>
-                    <td className="font-mono text-xs text-text">{payment.reference}</td>
-                    <td className="text-text">#LN-{String(payment.loan_id).padStart(6, '0')}</td>
-                    <td className="font-semibold text-text">{formatCurrency(payment.amount)}</td>
-                    <td className="text-text-muted capitalize">{payment.gateway}</td>
-                    <td>
-                      <span className={`${getStatusBadge(payment.status)} inline-flex items-center gap-1`}>
-                        {getStatusIcon(payment.status)} {payment.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="table min-w-[600px]">
+                <thead>
+                  <tr><th>Date</th><th>Reference</th><th>Loan</th><th>Amount</th><th>Gateway</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  {payments.map((payment) => (
+                    <tr key={payment.id}>
+                      <td className="text-text-muted text-sm whitespace-nowrap">{formatDateTime(payment.created_at)}</td>
+                      <td className="font-mono text-xs text-text whitespace-nowrap">{payment.reference}</td>
+                      <td className="text-text whitespace-nowrap">#LN-{String(payment.loan_id).padStart(6, '0')}</td>
+                      <td className="font-semibold text-text whitespace-nowrap">{formatCurrency(payment.amount)}</td>
+                      <td className="text-text-muted capitalize whitespace-nowrap">{payment.gateway}</td>
+                      <td>
+                        <span className={`${getStatusBadge(payment.status)} inline-flex items-center gap-1`}>
+                          {getStatusIcon(payment.status)} {payment.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

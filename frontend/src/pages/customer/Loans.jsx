@@ -128,24 +128,26 @@ export default function CustomerLoans() {
               <Link to="/loans/apply" className="btn btn-primary mt-4">Apply Now</Link>
             </div>
           ) : (
-            <table className="table">
-              <thead>
-                <tr><th>Purpose</th><th>Amount</th><th>Interest</th><th>Tenure</th><th>Date</th><th>Status</th><th></th></tr>
-              </thead>
-              <tbody>
-                {filtered.map((loan) => (
-                  <tr key={loan.id}>
-                    <td className="font-medium text-text">{loan.purpose || '-'}</td>
-                    <td className="text-text">{formatCurrency(loan.amount)}</td>
-                    <td className="text-text-muted">{loan.interest_rate}% p.a.</td>
-                    <td className="text-text-muted">{loan.tenure_months} months</td>
-                    <td className="text-text-muted">{formatDate(loan.created_at)}</td>
-                    <td><span className={getStatusBadge(loan.status)}>{loan.status}</span></td>
-                    <td><Link to={`/loans/${loan.id}`} className="text-primary-600 hover:underline text-sm flex items-center gap-1">View <ChevronRight size={14} /></Link></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="table min-w-[700px]">
+                <thead>
+                  <tr><th>Purpose</th><th>Amount</th><th>Interest</th><th>Tenure</th><th>Date</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody>
+                  {filtered.map((loan) => (
+                    <tr key={loan.id}>
+                      <td className="font-medium text-text whitespace-nowrap">{loan.purpose || '-'}</td>
+                      <td className="text-text whitespace-nowrap">{formatCurrency(loan.amount)}</td>
+                      <td className="text-text-muted whitespace-nowrap">{loan.interest_rate}% p.a.</td>
+                      <td className="text-text-muted whitespace-nowrap">{loan.tenure_months} months</td>
+                      <td className="text-text-muted whitespace-nowrap">{formatDate(loan.created_at)}</td>
+                      <td><span className={getStatusBadge(loan.status)}>{loan.status}</span></td>
+                      <td><Link to={`/loans/${loan.id}`} className="text-primary-600 hover:underline text-sm flex items-center gap-1">View <ChevronRight size={14} /></Link></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

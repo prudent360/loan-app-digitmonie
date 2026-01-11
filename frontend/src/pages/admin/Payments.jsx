@@ -167,40 +167,42 @@ export default function AdminPayments() {
               <p className="text-text-muted">No payment transactions found</p>
             </div>
           ) : (
-            <table className="table">
-              <thead>
-                <tr><th>Date</th><th>User</th><th>Reference</th><th>Loan</th><th>Amount</th><th>Gateway</th><th>Status</th><th>Actions</th></tr>
-              </thead>
-              <tbody>
-                {filtered.map((payment) => (
-                  <tr key={payment.id}>
-                    <td className="text-text-muted text-sm">{formatDateTime(payment.created_at)}</td>
-                    <td>
-                      <p className="font-medium text-text text-sm">{payment.user?.name || 'Unknown'}</p>
-                      <p className="text-xs text-text-muted">{payment.user?.email || '-'}</p>
-                    </td>
-                    <td className="font-mono text-xs text-text">{payment.reference}</td>
-                    <td className="text-text">#LN-{String(payment.loan_id).padStart(6, '0')}</td>
-                    <td className="font-semibold text-text">{formatCurrency(payment.amount)}</td>
-                    <td className="text-text-muted capitalize">{payment.gateway}</td>
-                    <td>
-                      <span className={`${getStatusBadge(payment.status)} inline-flex items-center gap-1`}>
-                        {getStatusIcon(payment.status)} {payment.status}
-                      </span>
-                    </td>
-                    <td>
-                      <button 
-                        className="p-1.5 rounded text-text-muted hover:text-primary-600 hover:bg-primary-50" 
-                        onClick={() => viewLoanRepayments(payment.loan_id)}
-                        title="View Repayment Schedule"
-                      >
-                        <Eye size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="table min-w-[900px]">
+                <thead>
+                  <tr><th>Date</th><th>User</th><th>Reference</th><th>Loan</th><th>Amount</th><th>Gateway</th><th>Status</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                  {filtered.map((payment) => (
+                    <tr key={payment.id}>
+                      <td className="text-text-muted text-sm whitespace-nowrap">{formatDateTime(payment.created_at)}</td>
+                      <td className="whitespace-nowrap">
+                        <p className="font-medium text-text text-sm">{payment.user?.name || 'Unknown'}</p>
+                        <p className="text-xs text-text-muted">{payment.user?.email || '-'}</p>
+                      </td>
+                      <td className="font-mono text-xs text-text whitespace-nowrap">{payment.reference}</td>
+                      <td className="text-text whitespace-nowrap">#LN-{String(payment.loan_id).padStart(6, '0')}</td>
+                      <td className="font-semibold text-text whitespace-nowrap">{formatCurrency(payment.amount)}</td>
+                      <td className="text-text-muted capitalize whitespace-nowrap">{payment.gateway}</td>
+                      <td>
+                        <span className={`${getStatusBadge(payment.status)} inline-flex items-center gap-1`}>
+                          {getStatusIcon(payment.status)} {payment.status}
+                        </span>
+                      </td>
+                      <td>
+                        <button 
+                          className="p-1.5 rounded text-text-muted hover:text-primary-600 hover:bg-primary-50" 
+                          onClick={() => viewLoanRepayments(payment.loan_id)}
+                          title="View Repayment Schedule"
+                        >
+                          <Eye size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
