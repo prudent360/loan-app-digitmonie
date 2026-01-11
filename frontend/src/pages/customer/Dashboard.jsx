@@ -35,10 +35,6 @@ export default function CustomerDashboard() {
           api.get('/customer/dashboard/stats').catch(() => ({ data: null }))
         ])
         
-        // Debug: Log the raw API responses
-        console.log('Loans API response:', loansRes.data)
-        console.log('Stats API response:', statsRes.data)
-        
         // Handle different response formats - API returns array directly
         let loans = []
         if (Array.isArray(loansRes.data)) {
@@ -49,7 +45,6 @@ export default function CustomerDashboard() {
           loans = loansRes.data.loans
         }
         
-        console.log('Parsed loans:', loans)
         setRecentLoans(loans.slice(0, 5))
 
         // Use stats from dedicated API if available, otherwise calculate from loans
@@ -60,15 +55,12 @@ export default function CustomerDashboard() {
         const pendingLoans = loans.filter(l => l.status === 'pending' || l.status === 'pending_review')
         const completedLoans = loans.filter(l => l.status === 'completed')
         
-        console.log('Active/Disbursed loans:', activeLoans.length, activeLoans)
-        
         // Savings total
         const savings = savingsRes.data.data || savingsRes.data || []
         const totalSavings = Array.isArray(savings) ? savings.reduce((sum, s) => sum + Number(s.current_balance || 0), 0) : 0
         
         // Use API stats if available (more accurate), fallback to manual calculation
         if (apiStats && apiStats.totalBorrowed !== undefined) {
-          console.log('Using API stats:', apiStats)
           setStats({
             totalBorrowed: apiStats.totalBorrowed || 0,
             totalPaid: apiStats.totalPaid || 0,
@@ -80,12 +72,9 @@ export default function CustomerDashboard() {
           })
         } else {
           // Fallback: calculate manually from loans
-          console.log('Using manual calculation from loans')
           const totalBorrowed = loans.filter(l => ['active', 'disbursed', 'completed'].includes(l.status)).reduce((sum, l) => sum + Number(l.amount || 0), 0)
           const totalPaid = loans.reduce((sum, l) => sum + Number(l.total_paid || 0), 0)
           const outstandingBalance = activeLoans.reduce((sum, l) => sum + Number(l.remaining_balance || 0), 0)
-          
-          console.log('Calculated stats:', { totalBorrowed, totalPaid, outstandingBalance })
           
           setStats({
             totalBorrowed,
@@ -233,69 +222,74 @@ export default function CustomerDashboard() {
     <CustomerLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-text">Dashboard</h1>
-            <p className="text-text-muted">Welcome back! Here's your financial overview</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-text">Dashboard</h1>
+            <p className="text-sm sm:text-base text-text-muted">Welcome back! Here's your financial overview</p>
           </div>
-          <Link to="/loans/apply" className="btn btn-primary">
+          <Link to="/loans/apply" className="btn btn-primary w-full sm:w-auto justify-center">
             <PlusCircle size={18} /> Apply for Loan
           </Link>
         </div>
 
-        {/* Stats Grid - Modern style */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: 'Total Borrowed', value: formatCurrency(stats.totalBorrowed), icon: FileText, bgColor: 'bg-gradient-to-br from-purple-500 to-purple-600', trend: null },
-            { label: 'Total Repaid', value: formatCurrency(stats.totalPaid), icon: CreditCard, bgColor: 'bg-gradient-to-br from-green-500 to-emerald-600', trend: `${repaymentProgress}%` },
-            { label: 'Outstanding', value: formatCurrency(stats.outstandingBalance), icon: TrendingUp, bgColor: 'bg-gradient-to-br from-orange-500 to-red-500', trend: null },
-            { label: 'Next Payment', value: formatCurrency(stats.nextPayment), icon: CreditCard, bgColor: 'bg-gradient-to-br from-blue-500 to-cyan-600', subtext: stats.nextPaymentDate },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div className={`w-12 h-12 rounded-xl ${stat.bgColor} flex items-center justify-center text-white shadow-lg`}>
-                  <stat.icon size={22} />
+        {/* Stats Grid - Horizontal scroll on mobile */}
+        <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 overflow-x-auto pb-2 sm:overflow-x-visible snap-x snap-mandatory">
+            {[
+              { label: 'Total Borrowed', value: formatCurrency(stats.totalBorrowed), icon: FileText, bgColor: 'bg-gradient-to-br from-purple-500 to-purple-600', trend: null },
+              { label: 'Total Repaid', value: formatCurrency(stats.totalPaid), icon: CreditCard, bgColor: 'bg-gradient-to-br from-green-500 to-emerald-600', trend: `${repaymentProgress}%` },
+              { label: 'Outstanding', value: formatCurrency(stats.outstandingBalance), icon: TrendingUp, bgColor: 'bg-gradient-to-br from-orange-500 to-red-500', trend: null },
+              { label: 'Next Payment', value: formatCurrency(stats.nextPayment), icon: CreditCard, bgColor: 'bg-gradient-to-br from-blue-500 to-cyan-600', subtext: stats.nextPaymentDate },
+            ].map((stat) => (
+              <div key={stat.label} className="flex-shrink-0 w-[160px] sm:w-auto bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow snap-start">
+                <div className="flex items-start justify-between mb-3 sm:mb-4">
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${stat.bgColor} flex items-center justify-center text-white shadow-lg`}>
+                    <stat.icon size={20} className="sm:hidden" />
+                    <stat.icon size={22} className="hidden sm:block" />
+                  </div>
+                  {stat.trend && (
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                      {stat.trend}
+                    </span>
+                  )}
                 </div>
-                {stat.trend && (
-                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                    {stat.trend}
-                  </span>
-                )}
+                <p className="text-lg sm:text-2xl font-bold text-gray-900 mb-1 truncate">{stat.value}</p>
+                <p className="text-xs sm:text-sm text-gray-500">{stat.label}</p>
+                {stat.subtext && <p className="text-xs text-gray-400 mt-1 truncate">{stat.subtext}</p>}
               </div>
-              <p className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</p>
-              <p className="text-sm text-gray-500">{stat.label}</p>
-              {stat.subtext && <p className="text-xs text-gray-400 mt-1">{stat.subtext}</p>}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Wallet & Savings Cards */}
-        <div className="grid grid-cols-2 gap-4">
-          <Link to="/wallet" className="bg-gradient-to-br from-teal-500 to-cyan-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+        {/* Wallet & Savings Cards - Stack on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Link to="/wallet" className="bg-gradient-to-br from-teal-500 to-cyan-600 rounded-2xl p-5 sm:p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <Wallet size={24} />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <Wallet size={20} className="sm:hidden" />
+                <Wallet size={24} className="hidden sm:block" />
               </div>
               <div>
-                <p className="text-teal-100 text-sm">Wallet Balance</p>
-                <p className="text-2xl font-bold">{formatCurrency(stats.walletBalance)}</p>
+                <p className="text-teal-100 text-xs sm:text-sm">Wallet Balance</p>
+                <p className="text-xl sm:text-2xl font-bold">{formatCurrency(stats.walletBalance)}</p>
               </div>
             </div>
-            <div className="flex items-center gap-1 text-sm text-teal-100">
+            <div className="flex items-center gap-1 text-xs sm:text-sm text-teal-100">
               Fund Wallet <ArrowUpRight size={14} />
             </div>
           </Link>
-          <Link to="/savings" className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
+          <Link to="/savings" className="bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-5 sm:p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                <PiggyBank size={24} />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <PiggyBank size={20} className="sm:hidden" />
+                <PiggyBank size={24} className="hidden sm:block" />
               </div>
               <div>
-                <p className="text-violet-100 text-sm">Total Savings</p>
-                <p className="text-2xl font-bold">{formatCurrency(stats.totalSavings)}</p>
+                <p className="text-violet-100 text-xs sm:text-sm">Total Savings</p>
+                <p className="text-xl sm:text-2xl font-bold">{formatCurrency(stats.totalSavings)}</p>
               </div>
             </div>
-            <div className="flex items-center gap-1 text-sm text-violet-100">
+            <div className="flex items-center gap-1 text-xs sm:text-sm text-violet-100">
               View Savings <ArrowUpRight size={14} />
             </div>
           </Link>
