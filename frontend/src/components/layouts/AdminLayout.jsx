@@ -24,34 +24,56 @@ export default function AdminLayout({ children }) {
   ]
 
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Mobile Menu Button */}
-      <button className="lg:hidden fixed top-4 left-4 z-50 bg-surface border border-border rounded-lg p-2 text-text" onClick={() => setSidebarOpen(!sidebarOpen)}>
-        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
-
-      {/* Overlay */}
-      {sidebarOpen && <div className="lg:hidden fixed inset-0 bg-black/20 z-40" onClick={() => setSidebarOpen(false)} />}
-
-      {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 h-full w-56 bg-gradient-to-b from-slate-900 via-slate-800 to-primary-900 flex flex-col z-40 transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        {/* Brand */}
-        <div className="flex items-center gap-2.5 px-5 py-5 border-b border-white/10">
+    <div className="flex flex-col min-h-screen bg-background">
+      {/* Mobile Header - Fixed at top */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-slate-900 z-50 flex items-center justify-between px-4">
+        {/* Hamburger Menu */}
+        <button 
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
+        >
+          {sidebarOpen ? <X size={22} className="text-white" /> : <Menu size={22} className="text-white" />}
+        </button>
+        
+        {/* Logo */}
+        <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-            <Wallet size={18} className="text-white" />
+            <Wallet size={16} className="text-white" />
           </div>
           <div>
-            <span className="text-lg font-semibold text-white">DigitMonie</span>
+            <span className="text-base font-semibold text-white">DigitMonie</span>
+            <span className="block text-[10px] text-primary-400 -mt-0.5">Admin</span>
+          </div>
+        </div>
+        
+        {/* User Avatar */}
+        <NavLink to="/admin/settings" className="w-9 h-9 rounded-full bg-primary-500/30 text-primary-300 flex items-center justify-center text-sm font-semibold">
+          {user?.name?.charAt(0)?.toUpperCase() || 'A'}
+        </NavLink>
+      </header>
+
+      {/* Overlay */}
+      {sidebarOpen && <div className="lg:hidden fixed inset-0 bg-black/30 z-40" onClick={() => setSidebarOpen(false)} />}
+
+      {/* Sidebar */}
+      <aside className={`fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-slate-900 via-slate-800 to-primary-900 flex flex-col z-40 transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        {/* Brand */}
+        <div className="flex items-center gap-2.5 px-5 py-5 border-b border-white/10">
+          <div className="w-9 h-9 bg-primary-500 rounded-xl flex items-center justify-center">
+            <Wallet size={20} className="text-white" />
+          </div>
+          <div>
+            <span className="text-lg font-bold text-white">DigitMonie</span>
             <span className="block text-xs text-primary-400">Admin</span>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navLinks.map(({ to, icon: Icon, label }) => (
             <NavLink key={to} to={to} end={to === '/admin'} onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive ? 'bg-white/10 text-white' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}>
-              <Icon size={18} />
+              className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive ? 'bg-white/15 text-white shadow-lg' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}>
+              <Icon size={20} />
               <span>{label}</span>
             </NavLink>
           ))}
@@ -59,8 +81,8 @@ export default function AdminLayout({ children }) {
 
         {/* User & Logout */}
         <div className="px-3 py-4 border-t border-white/10">
-          <div className="flex items-center gap-3 px-2 mb-3">
-            <div className="w-8 h-8 rounded-full bg-primary-500/20 text-primary-400 flex items-center justify-center text-sm font-medium">
+          <div className="flex items-center gap-3 px-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-primary-500/30 text-primary-300 flex items-center justify-center text-sm font-bold">
               {user?.name?.charAt(0)?.toUpperCase() || 'A'}
             </div>
             <div className="flex-1 min-w-0">
@@ -68,16 +90,16 @@ export default function AdminLayout({ children }) {
               <p className="text-xs text-primary-400">Administrator</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium w-full text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all">
-            <LogOut size={18} />
+          <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium w-full text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all">
+            <LogOut size={20} />
             <span>Logout</span>
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-56">
-        <div className="max-w-5xl mx-auto px-6 py-8 pt-16 lg:pt-8">
+      <main className="flex-1 lg:ml-64 pt-14 lg:pt-0 overflow-x-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 overflow-x-hidden">
           {children}
         </div>
       </main>

@@ -89,8 +89,8 @@ export default function CustomerLayout({ children }) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-64 pt-14 lg:pt-0">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="flex-1 lg:ml-64 pt-14 lg:pt-0 overflow-x-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 overflow-x-hidden">
           {children}
         </div>
       </main>
