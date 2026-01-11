@@ -232,33 +232,31 @@ export default function CustomerDashboard() {
           </Link>
         </div>
 
-        {/* Stats Grid - Horizontal scroll on mobile */}
-        <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
-          <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 overflow-x-auto pb-2 sm:overflow-x-visible snap-x snap-mandatory">
-            {[
-              { label: 'Total Borrowed', value: formatCurrency(stats.totalBorrowed), icon: FileText, bgColor: 'bg-gradient-to-br from-purple-500 to-purple-600', trend: null },
-              { label: 'Total Repaid', value: formatCurrency(stats.totalPaid), icon: CreditCard, bgColor: 'bg-gradient-to-br from-green-500 to-emerald-600', trend: `${repaymentProgress}%` },
-              { label: 'Outstanding', value: formatCurrency(stats.outstandingBalance), icon: TrendingUp, bgColor: 'bg-gradient-to-br from-orange-500 to-red-500', trend: null },
-              { label: 'Next Payment', value: formatCurrency(stats.nextPayment), icon: CreditCard, bgColor: 'bg-gradient-to-br from-blue-500 to-cyan-600', subtext: stats.nextPaymentDate },
-            ].map((stat) => (
-              <div key={stat.label} className="flex-shrink-0 w-[160px] sm:w-auto bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow snap-start">
-                <div className="flex items-start justify-between mb-3 sm:mb-4">
-                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${stat.bgColor} flex items-center justify-center text-white shadow-lg`}>
-                    <stat.icon size={20} className="sm:hidden" />
-                    <stat.icon size={22} className="hidden sm:block" />
-                  </div>
-                  {stat.trend && (
-                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                      {stat.trend}
-                    </span>
-                  )}
+        {/* Stats Grid - 2 columns on mobile, 4 on desktop */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {[
+            { label: 'Total Borrowed', value: formatCurrency(stats.totalBorrowed), icon: FileText, bgColor: 'bg-gradient-to-br from-purple-500 to-purple-600', trend: null },
+            { label: 'Total Repaid', value: formatCurrency(stats.totalPaid), icon: CreditCard, bgColor: 'bg-gradient-to-br from-green-500 to-emerald-600', trend: `${repaymentProgress}%` },
+            { label: 'Outstanding', value: formatCurrency(stats.outstandingBalance), icon: TrendingUp, bgColor: 'bg-gradient-to-br from-orange-500 to-red-500', trend: null },
+            { label: 'Next Payment', value: formatCurrency(stats.nextPayment), icon: CreditCard, bgColor: 'bg-gradient-to-br from-blue-500 to-cyan-600', subtext: stats.nextPaymentDate },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-sm border border-gray-100">
+              <div className="flex items-start justify-between mb-2 sm:mb-4">
+                <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl ${stat.bgColor} flex items-center justify-center text-white shadow-lg`}>
+                  <stat.icon size={16} className="sm:hidden" />
+                  <stat.icon size={22} className="hidden sm:block" />
                 </div>
-                <p className="text-lg sm:text-2xl font-bold text-gray-900 mb-1 truncate">{stat.value}</p>
-                <p className="text-xs sm:text-sm text-gray-500">{stat.label}</p>
-                {stat.subtext && <p className="text-xs text-gray-400 mt-1 truncate">{stat.subtext}</p>}
+                {stat.trend && (
+                  <span className="text-[10px] sm:text-xs font-medium text-green-600 bg-green-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
+                    {stat.trend}
+                  </span>
+                )}
               </div>
-            ))}
-          </div>
+              <p className="text-sm sm:text-2xl font-bold text-gray-900 mb-0.5 sm:mb-1 truncate">{stat.value}</p>
+              <p className="text-[10px] sm:text-sm text-gray-500 truncate">{stat.label}</p>
+              {stat.subtext && <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1 truncate">{stat.subtext}</p>}
+            </div>
+          ))}
         </div>
 
         {/* Wallet & Savings Cards - Stack on mobile */}
