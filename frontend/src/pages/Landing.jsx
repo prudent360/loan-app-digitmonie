@@ -17,7 +17,7 @@ export default function Landing() {
       try {
         const res = await api.get('/logo')
         if (res.data.logo_url) {
-          setLogoUrl(`${import.meta.env.PROD ? 'https://app.digitmonie.com/api' : 'http://localhost:8001'}${res.data.logo_url}`)
+          setLogoUrl(`${import.meta.env.PROD ? 'https://digitmonie.com/api' : 'http://localhost:8001'}${res.data.logo_url}`)
         }
       } catch (err) {
         console.error('Failed to fetch logo:', err)

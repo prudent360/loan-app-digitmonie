@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import CustomerLayout from '../../components/layouts/CustomerLayout'
+import { useAuth } from '../../context/AuthContext'
 import { loanAPI } from '../../services/api'
 import api from '../../services/api'
 import { FileText, Loader2, PlusCircle, Wallet, PiggyBank, CreditCard, TrendingUp, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts'
 
 export default function CustomerDashboard() {
+  const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ 
     totalBorrowed: 0, 
@@ -142,7 +144,15 @@ export default function CustomerDashboard() {
     approved: 'bg-emerald-100 text-emerald-700'
   }[s] || 'bg-gray-100 text-gray-700')
   
+  
   const repaymentProgress = stats.totalBorrowed > 0 ? Math.round((stats.totalPaid / stats.totalBorrowed) * 100) : 0
+
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good Morning'
+    if (hour < 17) return 'Good Afternoon'
+    return 'Good Evening'
+  }
 
   if (loading) {
     return (
@@ -221,42 +231,53 @@ export default function CustomerDashboard() {
   return (
     <CustomerLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-text">Dashboard</h1>
-            <p className="text-sm sm:text-base text-text-muted">Welcome back! Here's your financial overview</p>
+        {/* Greeting Banner - Earnrol Style */}
+        <div 
+          className="rounded-2xl p-6 text-white shadow-lg overflow-hidden relative"
+          style={{ 
+            background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)' 
+          }}
+        >
+          {/* Decorative background element */}
+          <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+          <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-blue-400/10 rounded-full blur-2xl" />
+          
+          <div className="relative z-10">
+            <h1 className="text-2xl sm:text-3xl font-bold">{getGreeting()}, {user?.name?.split(' ')[0] || 'Member'} 👋</h1>
+            <p className="text-blue-100 mt-1 opacity-90">Manage your loans and grow your financial future.</p>
           </div>
-          <Link to="/loans/apply" className="btn btn-primary w-full sm:w-auto justify-center">
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex justify-end">
+          <Link to="/loans/apply" className="btn btn-primary flex items-center gap-2">
             <PlusCircle size={18} /> Apply for Loan
           </Link>
         </div>
 
-        {/* Stats Grid - 2 columns on mobile, 4 on desktop */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Stats Grid - Earnrol Style */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: 'Total Borrowed', value: formatCurrency(stats.totalBorrowed), icon: FileText, bgColor: 'bg-gradient-to-br from-purple-500 to-purple-600', trend: null },
-            { label: 'Total Repaid', value: formatCurrency(stats.totalPaid), icon: CreditCard, bgColor: 'bg-gradient-to-br from-green-500 to-emerald-600', trend: `${repaymentProgress}%` },
-            { label: 'Outstanding', value: formatCurrency(stats.outstandingBalance), icon: TrendingUp, bgColor: 'bg-gradient-to-br from-orange-500 to-red-500', trend: null },
-            { label: 'Next Payment', value: formatCurrency(stats.nextPayment), icon: CreditCard, bgColor: 'bg-gradient-to-br from-blue-500 to-cyan-600', subtext: stats.nextPaymentDate },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-sm border border-gray-100">
-              <div className="flex items-start justify-between mb-2 sm:mb-4">
-                <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl ${stat.bgColor} flex items-center justify-center text-white shadow-lg`}>
-                  <stat.icon size={16} className="sm:hidden" />
-                  <stat.icon size={22} className="hidden sm:block" />
+            { label: 'Total Borrowed', value: formatCurrency(stats.totalBorrowed), icon: FileText, color: 'text-purple-600', bg: 'bg-purple-100', fadedBg: 'text-purple-100' },
+            { label: 'Total Repaid', value: formatCurrency(stats.totalPaid), icon: CreditCard, color: 'text-emerald-600', bg: 'bg-emerald-100', fadedBg: 'text-emerald-100' },
+            { label: 'Outstanding', value: formatCurrency(stats.outstandingBalance), icon: TrendingUp, color: 'text-orange-600', bg: 'bg-orange-100', fadedBg: 'text-orange-100' },
+            { label: 'Next Payment', value: formatCurrency(stats.nextPayment), icon: CreditCard, color: 'text-blue-600', bg: 'bg-blue-100', fadedBg: 'text-blue-100', subtext: stats.nextPaymentDate },
+          ].map((stat) => {
+            const IconComponent = stat.icon
+            return (
+              <div key={stat.label} className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 relative overflow-hidden flex items-center gap-4">
+                <IconComponent size={80} className={`absolute -bottom-2 -right-2 ${stat.fadedBg} opacity-50`} strokeWidth={1} />
+                <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center flex-shrink-0 relative z-10`}>
+                  <IconComponent size={24} className={stat.color} />
                 </div>
-                {stat.trend && (
-                  <span className="text-[10px] sm:text-xs font-medium text-green-600 bg-green-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
-                    {stat.trend}
-                  </span>
-                )}
+                <div className="relative z-10">
+                  <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-sm text-gray-500">{stat.label}</p>
+                  {stat.subtext && <p className="text-xs text-gray-400 mt-0.5">{stat.subtext}</p>}
+                </div>
               </div>
-              <p className="text-sm sm:text-2xl font-bold text-gray-900 mb-0.5 sm:mb-1 truncate">{stat.value}</p>
-              <p className="text-[10px] sm:text-sm text-gray-500 truncate">{stat.label}</p>
-              {stat.subtext && <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1 truncate">{stat.subtext}</p>}
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* Wallet & Savings Cards - Stack on mobile */}

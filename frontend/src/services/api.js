@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const API_URL = import.meta.env.PROD 
-  ? 'https://app.digitmonie.com/api/public/api' 
+  ? 'https://digitmonie.com/api/public/api' 
   : '/api'
 
 const api = axios.create({
@@ -44,6 +44,8 @@ export const authAPI = {
   logout: () => api.post('/logout'),
   getUser: () => api.get('/user'),
   forgotPassword: (email) => api.post('/forgot-password', { email }),
+  verifyEmail: (id, hash, params) => api.get(`/email/verify/${id}/${hash}`, { params }),
+  resendVerification: () => api.post('/email/verification-notification'),
 }
 
 // Profile APIs - routes at /api/customer/profile
@@ -86,7 +88,10 @@ export const adminAPI = {
   // Users
   getUsers: (params) => api.get('/admin/users', { params }),
   getUser: (id) => api.get(`/admin/users/${id}`),
+  updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
   updateUserStatus: (id, status) => api.patch(`/admin/users/${id}/status`, { status }),
+  impersonateUser: (id) => api.post(`/admin/users/${id}/impersonate`),
   
   // Loans
   getLoans: (params) => api.get('/admin/loans', { params }),
@@ -100,9 +105,16 @@ export const adminAPI = {
   approveKYC: (id) => api.post(`/admin/kyc/${id}/approve`),
   rejectKYC: (id, reason) => api.post(`/admin/kyc/${id}/reject`, { reason }),
   
+  // Savings
+  releaseSavingsFunds: (id) => api.post(`/admin/savings/subscriptions/${id}/release`),
+
   // Settings
   getSettings: () => api.get('/admin/settings'),
   updateSettings: (data) => api.put('/admin/settings', data),
+  sendTestEmail: (email) => api.post('/admin/settings/test-email', { email }),
+
+  // Loan Timeline
+  updateLoanTimelineStep: (loanId, stepId, data) => api.put(`/admin/loans/${loanId}/timeline/${stepId}`, data),
 }
 
 // Currency API (public)

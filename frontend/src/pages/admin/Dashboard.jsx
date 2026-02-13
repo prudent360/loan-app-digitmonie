@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import AdminLayout from '../../components/layouts/AdminLayout'
+import { useAuth } from '../../context/AuthContext'
 import { adminAPI } from '../../services/api'
 import api from '../../services/api'
 import { Users, FileText, Wallet, Clock, Loader2, TrendingUp, PiggyBank, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts'
 
 export default function AdminDashboard() {
+  const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ 
     totalUsers: 0, 
@@ -110,6 +112,13 @@ export default function AdminDashboard() {
     completed: 'bg-gray-100 text-gray-700' 
   }[s] || 'bg-gray-100 text-gray-700')
 
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good Morning'
+    if (hour < 17) return 'Good Afternoon'
+    return 'Good Evening'
+  }
+
   if (loading) {
     return (
       <AdminLayout>
@@ -177,39 +186,51 @@ export default function AdminDashboard() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-text">Dashboard</h1>
-            <p className="text-text-muted">Welcome back! Here's your overview</p>
-          </div>
-          <div className="text-sm text-text-muted">
-            {new Date().toLocaleDateString('en-NG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        {/* Greeting Banner - Earnrol Style */}
+        <div 
+          className="rounded-2xl p-6 text-white shadow-lg overflow-hidden relative"
+          style={{ 
+            background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)' 
+          }}
+        >
+          {/* Decorative background element */}
+          <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+          <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-blue-400/10 rounded-full blur-2xl" />
+          
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold">{getGreeting()}, {user?.name?.split(' ')[0] || 'Admin'} 👋</h1>
+              <p className="text-blue-100 mt-1 opacity-90">Welcome back! Here's what's happening today.</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 hidden sm:block">
+              <p className="text-xs text-blue-100 opacity-80">System Date</p>
+              <p className="text-sm font-semibold">{new Date().toLocaleDateString('en-NG', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+            </div>
           </div>
         </div>
 
-        {/* Stats Grid - H-care style */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Stats Grid - Earnrol Style */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: 'Total Users', value: stats.totalUsers.toLocaleString(), icon: Users, bgColor: 'bg-gradient-to-br from-blue-500 to-blue-600', trend: '+12%', up: true },
-            { label: 'Active Loans', value: stats.activeLoans, icon: FileText, bgColor: 'bg-gradient-to-br from-emerald-500 to-emerald-600', trend: '+8%', up: true },
-            { label: 'Total Disbursed', value: formatCurrency(stats.totalDisbursed), icon: Wallet, bgColor: 'bg-gradient-to-br from-purple-500 to-purple-600', trend: '+23%', up: true },
-            { label: 'Pending Review', value: stats.pendingReview, icon: Clock, bgColor: 'bg-gradient-to-br from-amber-500 to-orange-500', trend: '-5%', up: false },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div className={`w-12 h-12 rounded-xl ${stat.bgColor} flex items-center justify-center text-white shadow-lg`}>
-                  <stat.icon size={22} />
+            { label: 'Total Users', value: stats.totalUsers.toLocaleString(), icon: Users, color: 'text-blue-600', bg: 'bg-blue-100', fadedBg: 'text-blue-100' },
+            { label: 'Active Loans', value: stats.activeLoans, icon: FileText, color: 'text-emerald-600', bg: 'bg-emerald-100', fadedBg: 'text-emerald-100' },
+            { label: 'Total Disbursed', value: formatCurrency(stats.totalDisbursed), icon: Wallet, color: 'text-purple-600', bg: 'bg-purple-100', fadedBg: 'text-purple-100' },
+            { label: 'Pending Review', value: stats.pendingReview, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100', fadedBg: 'text-amber-100' },
+          ].map((stat) => {
+            const IconComponent = stat.icon
+            return (
+              <div key={stat.label} className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 relative overflow-hidden flex items-center gap-4">
+                <IconComponent size={80} className={`absolute -bottom-2 -right-2 ${stat.fadedBg} opacity-50`} strokeWidth={1} />
+                <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center flex-shrink-0 relative z-10`}>
+                  <IconComponent size={24} className={stat.color} />
                 </div>
-                <div className={`flex items-center gap-1 text-xs font-medium ${stat.up ? 'text-green-600' : 'text-red-600'}`}>
-                  {stat.up ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                  {stat.trend}
+                <div className="relative z-10">
+                  <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-sm text-gray-500">{stat.label}</p>
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</p>
-              <p className="text-sm text-gray-500">{stat.label}</p>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* Second row - Savings & Transfers */}

@@ -133,8 +133,44 @@ export default function VirtualCards() {
   if (loading) {
     return (
       <CustomerLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="animate-spin text-primary-600" size={32} />
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="animate-pulse bg-gray-200 rounded w-36 h-7 mb-2" />
+              <div className="animate-pulse bg-gray-200 rounded w-64 h-4" />
+            </div>
+            <div className="animate-pulse bg-gray-200 rounded-lg w-32 h-10" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1,2,3].map(i => (
+              <div key={i} className="card p-0 overflow-hidden">
+                <div className="bg-gradient-to-br from-gray-300 to-gray-200 p-6 text-white relative overflow-hidden">
+                  <div className="flex justify-between items-start mb-8">
+                    <div className="animate-pulse bg-white/30 w-10 h-7 rounded" />
+                    <div className="animate-pulse bg-white/30 w-16 h-6 rounded" />
+                  </div>
+                  <div className="mb-6">
+                    <div className="animate-pulse bg-white/30 w-48 h-6 rounded" />
+                  </div>
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <div className="animate-pulse bg-white/30 w-16 h-3 rounded mb-1" />
+                      <div className="animate-pulse bg-white/30 w-24 h-6 rounded" />
+                    </div>
+                    <div className="animate-pulse bg-white/30 w-9 h-9 rounded-lg" />
+                  </div>
+                </div>
+                <div className="p-4 space-y-3">
+                  <div className="flex gap-2">
+                    <div className="animate-pulse bg-gray-200 rounded-lg flex-1 h-9" />
+                    <div className="animate-pulse bg-gray-200 rounded-lg w-9 h-9" />
+                    <div className="animate-pulse bg-gray-200 rounded-lg w-9 h-9" />
+                  </div>
+                  <div className="animate-pulse bg-gray-200 rounded w-32 h-3 mx-auto" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </CustomerLayout>
     )

@@ -40,6 +40,14 @@ class Loan extends Model
         'disbursed_at' => 'datetime',
     ];
 
+    /**
+     * Get the loan reference number
+     */
+    public function getReferenceAttribute()
+    {
+        return 'LOAN-' . str_pad($this->id, 6, '0', STR_PAD_LEFT);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

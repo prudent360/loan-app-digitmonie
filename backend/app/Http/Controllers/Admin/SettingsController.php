@@ -20,6 +20,16 @@ class SettingsController extends Controller
                 'paystack' => ['public_key' => '', 'secret_key' => '', 'enabled' => true],
                 'flutterwave' => ['public_key' => '', 'secret_key' => '', 'enabled' => false],
             ]),
+            'email_settings' => Setting::getValue('email_settings', [
+                'mail_mailer' => 'smtp',
+                'mail_host' => '',
+                'mail_port' => 587,
+                'mail_username' => '',
+                'mail_password' => '',
+                'mail_encryption' => 'tls',
+                'mail_from_address' => '',
+                'mail_from_name' => '',
+            ]),
             'logo_url' => Setting::getValue('logo_url', null),
         ]);
     }
@@ -40,6 +50,10 @@ class SettingsController extends Controller
 
         if ($request->has('payment_gateways')) {
             Setting::setValue('payment_gateways', $request->payment_gateways);
+        }
+
+        if ($request->has('email_settings')) {
+            Setting::setValue('email_settings', $request->email_settings);
         }
 
         return response()->json([
@@ -131,5 +145,17 @@ class SettingsController extends Controller
             'gateway' => $gateways['active_gateway'] ?? 'paystack',
             'mode' => $gateways['mode'] ?? 'test'
         ]);
+    }
+
+    public function sendTestEmail(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+        
+        try {
+            \App\Services\NotificationService::sendTestEmail($request->email);
+            return response()->json(['message' => 'Test email sent successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to send test email: ' . $e->getMessage()], 500);
+        }
     }
 }

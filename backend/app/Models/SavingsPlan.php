@@ -9,21 +9,22 @@ class SavingsPlan extends Model
     protected $fillable = [
         'name',
         'description',
-        'interest_rate',
         'min_amount',
         'max_amount',
-        'lock_period_days',
-        'early_withdrawal_penalty',
+        'allow_early_withdrawal',
         'status'
     ];
 
     protected $casts = [
-        'interest_rate' => 'decimal:2',
         'min_amount' => 'decimal:2',
         'max_amount' => 'decimal:2',
-        'early_withdrawal_penalty' => 'decimal:2',
-        'lock_period_days' => 'integer'
+        'allow_early_withdrawal' => 'boolean'
     ];
+
+    public function durations()
+    {
+        return $this->hasMany(SavingsPlanDuration::class)->orderBy('lock_period_days');
+    }
 
     public function userSavings()
     {
@@ -33,10 +34,5 @@ class SavingsPlan extends Model
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
-    }
-
-    public function isFlexible()
-    {
-        return $this->lock_period_days === 0;
     }
 }

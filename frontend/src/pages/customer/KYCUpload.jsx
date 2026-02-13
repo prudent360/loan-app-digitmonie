@@ -77,7 +77,42 @@ export default function KYCUpload() {
   const kycProgress = Math.round((documents.filter(d => d.status === 'approved').length / documentTypes.length) * 100)
 
   if (loading) {
-    return <CustomerLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-primary-600" size={32} /></div></CustomerLayout>
+    return (
+      <CustomerLayout>
+        <div className="max-w-3xl space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="animate-pulse bg-gray-200 rounded w-40 h-7 mb-2" />
+              <div className="animate-pulse bg-gray-200 rounded w-56 h-4" />
+            </div>
+            <div className="card px-4 py-3">
+              <div className="animate-pulse bg-gray-200 rounded w-32 h-4 mb-1.5" />
+              <div className="animate-pulse bg-gray-200 rounded w-32 h-1.5" />
+            </div>
+          </div>
+          <div className="card">
+            <div className="animate-pulse bg-gray-200 rounded w-36 h-4 mb-4" />
+            <div className="space-y-3">
+              {[1,2,3,4].map(i => (
+                <div key={i} className="flex items-center gap-4 p-4 rounded-lg border border-border">
+                  <div className="animate-pulse bg-gray-200 rounded-lg w-10 h-10" />
+                  <div className="flex-1">
+                    <div className="animate-pulse bg-gray-200 rounded w-32 h-4 mb-1" />
+                    <div className="animate-pulse bg-gray-200 rounded w-48 h-3" />
+                  </div>
+                  <div className="animate-pulse bg-gray-200 rounded-full w-16 h-6" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
+            <div className="animate-pulse bg-gray-200 rounded w-36 h-4 mb-4" />
+            <div className="animate-pulse bg-gray-200 rounded-lg h-10 mb-4" />
+            <div className="animate-pulse bg-gray-200 rounded-lg h-32" />
+          </div>
+        </div>
+      </CustomerLayout>
+    )
   }
 
   return (

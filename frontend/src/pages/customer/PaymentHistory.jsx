@@ -58,7 +58,44 @@ export default function PaymentHistory() {
   }
 
   if (loading) {
-    return <CustomerLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-primary-600" size={32} /></div></CustomerLayout>
+    return (
+      <CustomerLayout>
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="animate-pulse bg-gray-200 rounded w-40 h-7 mb-2" />
+              <div className="animate-pulse bg-gray-200 rounded w-56 h-4" />
+            </div>
+            <div className="animate-pulse bg-gray-200 rounded-lg w-32 h-10" />
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="card">
+                <div className="animate-pulse bg-gray-200 rounded w-24 h-3 mb-2" />
+                <div className="animate-pulse bg-gray-200 rounded w-16 h-7" />
+              </div>
+            ))}
+          </div>
+          <div className="card p-0">
+            <table className="table">
+              <thead><tr>{['Date','Reference','Loan','Amount','Gateway','Status'].map(h => <th key={h}><div className="animate-pulse bg-gray-200 rounded w-16 h-4" /></th>)}</tr></thead>
+              <tbody>
+                {[1,2,3,4,5].map(i => (
+                  <tr key={i}>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-24 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-32 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-20 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-20 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-16 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded-full w-16 h-6" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </CustomerLayout>
+    )
   }
 
   return (

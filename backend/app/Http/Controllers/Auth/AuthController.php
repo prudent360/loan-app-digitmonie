@@ -28,12 +28,11 @@ class AuthController extends Controller
             'status' => 'active',
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $user->sendEmailVerificationNotification();
 
         return response()->json([
-            'message' => 'Registration successful',
+            'message' => 'Registration successful. Please check your email to verify your account.',
             'user' => $user,
-            'token' => $token,
         ], 201);
     }
 
@@ -52,10 +51,18 @@ class AuthController extends Controller
             ]);
         }
 
-        if ($user->status === 'suspended') {
+        if ($user->status !== 'active') {
             throw ValidationException::withMessages([
-                'email' => ['Your account has been suspended.'],
+                'email' => ["Your account is {$user->status}."],
             ]);
+        }
+
+        if (!$user->hasVerifiedEmail()) {
+            return response()->json([
+                'message' => 'Your email address is not verified.',
+                'requires_verification' => true,
+                'email' => $user->email
+            ], 403);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;

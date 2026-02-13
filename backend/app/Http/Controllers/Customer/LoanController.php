@@ -5,8 +5,12 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\Loan;
 use App\Models\Repayment;
+use App\Models\User;
+use App\Services\NotificationService;
+use App\Notifications\AdminAlertNotification;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Notification;
 
 class LoanController extends Controller
 {
@@ -28,8 +32,8 @@ class LoanController extends Controller
                     'status' => $loan->status,
                     'emi' => round($loan->emi, 2),
                     'total_payable' => round($loan->total_payable, 2),
-                    'total_paid' => round($loan->total_paid, 2),
-                    'remaining_balance' => round($loan->remaining_balance, 2),
+                    'total_paid' => round((float)$loan->total_paid, 2),
+                    'remaining_balance' => round((float)$loan->remaining_balance, 2),
                     'created_at' => $loan->created_at->format('Y-m-d'),
                 ];
             });
@@ -74,18 +78,18 @@ class LoanController extends Controller
             'id' => $loan->id,
             'amount' => $loan->amount,
             'interest_rate' => $loan->interest_rate,
-            'admin_fee' => round($loan->admin_fee, 2),
+            'admin_fee' => round((float)$loan->admin_fee, 2),
             'admin_fee_paid' => $loan->admin_fee_paid,
             'tenure_months' => $loan->tenure_months,
             'purpose' => $loan->purpose,
             'purpose_details' => $loan->purpose_details,
             'status' => $loan->status,
             'rejection_reason' => $loan->rejection_reason,
-            'emi' => round($loan->emi, 2),
-            'total_payable' => round($loan->total_payable, 2),
-            'total_interest' => round($loan->total_interest, 2),
-            'total_paid' => round($loan->total_paid, 2),
-            'remaining_balance' => round($loan->remaining_balance, 2),
+            'emi' => round((float)$loan->emi, 2),
+            'total_payable' => round((float)$loan->total_payable, 2),
+            'total_interest' => round((float)$loan->total_interest, 2),
+            'total_paid' => round((float)$loan->total_paid, 2),
+            'remaining_balance' => round((float)$loan->remaining_balance, 2),
             'next_payment' => $loan->next_repayment,
             'created_at' => $loan->created_at->format('Y-m-d'),
             'approved_at' => $loan->approved_at?->format('Y-m-d'),
@@ -138,6 +142,22 @@ class LoanController extends Controller
             'status' => 'pending',
         ]);
 
+        // Send Notifications
+        try {
+            // Notify User
+            NotificationService::sendLoanSubmittedEmail($loan);
+
+            // Notify Admins
+            $admins = User::whereIn('role', ['super_admin', 'loan_manager'])->get();
+            Notification::send($admins, new AdminAlertNotification(
+                "New Loan Application",
+                "A new loan application of ₦" . number_format((float)$loan->amount, 2) . " has been submitted by " . $request->user()->name,
+                "/admin/loans/" . $loan->id
+            ));
+        } catch (\Exception $e) {
+            \Log::error("Notification failed: " . $e->getMessage());
+        }
+
         return response()->json([
             'message' => 'Loan application submitted successfully',
             'loan' => [
@@ -186,6 +206,13 @@ class LoanController extends Controller
         $pendingCount = $loan->repayments()->where('status', 'pending')->count();
         if ($pendingCount === 0) {
             $loan->update(['status' => 'completed']);
+        }
+
+        // Notify User
+        try {
+            NotificationService::sendLoanStatusUpdateEmail($loan);
+        } catch (\Exception $e) {
+            \Log::error("Notification failed: " . $e->getMessage());
         }
 
         return response()->json([

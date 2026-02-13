@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\TransferRequest;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Notifications\AdminAlertNotification;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -69,7 +71,7 @@ class TransferController extends Controller
 
                 // Credit wallet
                 $balanceBefore = $wallet->balance;
-                $wallet->increment('balance', $transferRequest->amount);
+                $wallet->increment('balance', (float)$transferRequest->amount);
 
                 // Create transaction record
                 WalletTransaction::create([
@@ -87,6 +89,14 @@ class TransferController extends Controller
                     'status' => 'completed',
                 ]);
             });
+
+            // Notify User
+            try {
+                $user = $transferRequest->user;
+                NotificationService::sendWalletFundedEmail($user, (float)$transferRequest->amount, (float)$user->wallet->balance, $transferRequest->reference);
+            } catch (\Exception $e) {
+                Log::error("Notification failed: " . $e->getMessage());
+            }
 
             return response()->json([
                 'message' => 'Transfer approved and wallet credited',
@@ -122,6 +132,14 @@ class TransferController extends Controller
             'approved_by' => auth()->id(),
             'processed_at' => now(),
         ]);
+
+        // Notify User
+        try {
+            $user = $transferRequest->user;
+            NotificationService::sendFundingRejectedEmail($user, (float)$transferRequest->amount, $request->notes, $transferRequest->reference);
+        } catch (\Exception $e) {
+            Log::error("Notification failed: " . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Transfer request rejected',

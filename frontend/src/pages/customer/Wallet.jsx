@@ -159,12 +159,85 @@ export default function Wallet() {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' 
   })
 
-  if (loading || verifying) {
+  if (loading) {
+    return (
+      <CustomerLayout>
+        <div className="space-y-6">
+          {/* Header Skeleton */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="animate-pulse bg-gray-200 rounded w-32 h-8 mb-2" />
+              <div className="animate-pulse bg-gray-200 rounded w-48 h-4" />
+            </div>
+            <div className="animate-pulse bg-gray-200 rounded-lg w-36 h-10" />
+          </div>
+
+          {/* Balance Card Skeleton */}
+          <div className="bg-gradient-to-br from-gray-300 via-gray-200 to-gray-300 rounded-2xl p-8 relative overflow-hidden">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="animate-pulse bg-white/30 rounded-xl w-12 h-12" />
+              <div>
+                <div className="animate-pulse bg-white/30 rounded w-24 h-4 mb-2" />
+                <div className="animate-pulse bg-white/30 rounded w-32 h-8" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              <div className="bg-white/20 rounded-xl p-4">
+                <div className="animate-pulse bg-white/30 rounded w-28 h-4 mb-2" />
+                <div className="animate-pulse bg-white/30 rounded w-20 h-6" />
+              </div>
+              <div className="bg-white/20 rounded-xl p-4">
+                <div className="animate-pulse bg-white/30 rounded w-28 h-4 mb-2" />
+                <div className="animate-pulse bg-white/30 rounded w-20 h-6" />
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions Skeleton */}
+          <div className="grid grid-cols-2 gap-4">
+            {[1, 2].map(i => (
+              <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                <div className="animate-pulse bg-gray-200 rounded-xl w-12 h-12 mx-auto mb-3" />
+                <div className="animate-pulse bg-gray-200 rounded w-24 h-4 mx-auto" />
+              </div>
+            ))}
+          </div>
+
+          {/* Transaction History Skeleton */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="animate-pulse bg-gray-200 rounded w-40 h-5" />
+              <div className="animate-pulse bg-gray-200 rounded w-16 h-4" />
+            </div>
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-4">
+                    <div className="animate-pulse bg-gray-200 rounded-full w-10 h-10" />
+                    <div>
+                      <div className="animate-pulse bg-gray-200 rounded w-32 h-4 mb-1" />
+                      <div className="animate-pulse bg-gray-200 rounded w-24 h-3" />
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="animate-pulse bg-gray-200 rounded w-20 h-4 mb-1" />
+                    <div className="animate-pulse bg-gray-200 rounded w-16 h-3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </CustomerLayout>
+    )
+  }
+
+  if (verifying) {
     return (
       <CustomerLayout>
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <Loader2 className="animate-spin text-primary-600" size={32} />
-          {verifying && <p className="text-text-muted">Verifying your payment...</p>}
+          <p className="text-text-muted">Verifying your payment...</p>
         </div>
       </CustomerLayout>
     )

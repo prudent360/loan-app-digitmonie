@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Loan;
 use App\Models\Repayment;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -93,6 +94,9 @@ class LoanController extends Controller
             'approved_at' => now(),
         ]);
 
+        // Notify User
+        NotificationService::sendLoanStatusUpdateEmail($loan);
+
         return response()->json([
             'message' => 'Loan approved successfully',
             'loan' => $loan,
@@ -113,6 +117,9 @@ class LoanController extends Controller
             'status' => 'rejected',
             'rejection_reason' => $request->reason,
         ]);
+
+        // Notify User
+        NotificationService::sendLoanStatusUpdateEmail($loan);
 
         return response()->json([
             'message' => 'Loan rejected',
@@ -136,6 +143,9 @@ class LoanController extends Controller
 
         // Update to active after disbursement
         $loan->update(['status' => 'active']);
+
+        // Notify User
+        NotificationService::sendLoanStatusUpdateEmail($loan);
 
         return response()->json([
             'message' => 'Loan disbursed successfully',

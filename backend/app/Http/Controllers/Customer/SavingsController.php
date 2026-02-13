@@ -4,17 +4,19 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\SavingsPlan;
+use App\Models\SavingsPlanDuration;
 use App\Models\UserSaving;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use App\Services\SavingsNotificationService;
+use App\Services\NotificationService;
 
 class SavingsController extends Controller
 {
     public function plans()
     {
         $plans = SavingsPlan::active()
-            ->orderBy('interest_rate', 'desc')
+            ->with('durations')
+            ->orderBy('name')
             ->get();
 
         return response()->json(['plans' => $plans]);
@@ -23,7 +25,7 @@ class SavingsController extends Controller
     public function index()
     {
         $savings = auth()->user()->userSavings()
-            ->with('savingsPlan')
+            ->with(['savingsPlan', 'duration'])
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($saving) {
@@ -41,10 +43,14 @@ class SavingsController extends Controller
     {
         $request->validate([
             'savings_plan_id' => 'required|exists:savings_plans,id',
+            'savings_plan_duration_id' => 'required|exists:savings_plan_durations,id',
+            'name' => 'nullable|string|max:100',
             'amount' => 'required|numeric|min:1'
         ]);
 
         $plan = SavingsPlan::active()->findOrFail($request->savings_plan_id);
+        $duration = SavingsPlanDuration::where('savings_plan_id', $plan->id)
+            ->findOrFail($request->savings_plan_duration_id);
 
         // Validate amount against plan limits
         if ($request->amount < $plan->min_amount) {
@@ -65,20 +71,24 @@ class SavingsController extends Controller
             return response()->json(['message' => 'Insufficient wallet balance'], 400);
         }
 
-        // Deduct from wallet
-        $wallet->balance -= $request->amount;
-        $wallet->save();
+        // Store balance before deduction
+        $balanceBefore = $wallet->balance;
 
-        // Calculate maturity date
-        $maturityDate = $plan->lock_period_days > 0 
-            ? Carbon::now()->addDays($plan->lock_period_days) 
+        // Deduct from wallet
+        $wallet->decrement('balance', (float)$request->amount);
+
+        // Calculate maturity date from duration
+        $maturityDate = $duration->lock_period_days > 0 
+            ? Carbon::now()->addDays($duration->lock_period_days) 
             : null;
 
         // Create user saving
         $saving = UserSaving::create([
             'user_id' => auth()->id(),
             'savings_plan_id' => $plan->id,
-            'amount' => $request->amount,
+            'savings_plan_duration_id' => $duration->id,
+            'name' => $request->name,
+            'amount' => (float)$request->amount,
             'accrued_interest' => 0,
             'maturity_date' => $maturityDate,
             'status' => 'active'
@@ -86,17 +96,20 @@ class SavingsController extends Controller
 
         // Log transaction
         $wallet->transactions()->create([
+            'user_id' => auth()->id(),
+            'reference' => 'SAV-' . uniqid(),
             'type' => 'savings_deposit',
             'amount' => $request->amount,
-            'balance_after' => $wallet->balance,
-            'description' => "Deposit to {$plan->name}",
+            'balance_before' => (float)$balanceBefore,
+            'balance_after' => (float)$wallet->fresh()->balance,
+            'description' => "Deposit to {$plan->name} ({$duration->lock_period_days} days)",
             'status' => 'completed'
         ]);
 
-        $saving->load('savingsPlan');
+        $saving->load(['savingsPlan', 'duration']);
 
         // Send email notification
-        SavingsNotificationService::sendNewSavingsEmail($saving);
+        NotificationService::sendSavingsContributionEmail($saving, (float)$request->amount);
 
         return response()->json([
             'message' => 'Savings created successfully',
@@ -107,7 +120,7 @@ class SavingsController extends Controller
     public function show($id)
     {
         $saving = auth()->user()->userSavings()
-            ->with('savingsPlan')
+            ->with(['savingsPlan', 'duration'])
             ->findOrFail($id);
 
         $saving->calculated_interest = $saving->calculateInterest();
@@ -121,24 +134,34 @@ class SavingsController extends Controller
     public function withdraw($id)
     {
         $saving = auth()->user()->userSavings()
-            ->with('savingsPlan')
+            ->with(['savingsPlan', 'duration'])
             ->where('status', 'active')
             ->findOrFail($id);
+
+        // Check if early withdrawal is allowed
+        $plan = $saving->savingsPlan;
+        $canWithdrawNormally = $saving->canWithdraw();
+        
+        if (!$canWithdrawNormally && !$plan->allow_early_withdrawal) {
+            return response()->json([
+                'message' => 'Early withdrawal is not allowed for this savings plan. Please wait until the maturity date.'
+            ], 400);
+        }
 
         $interest = $saving->calculateInterest();
         $totalAmount = $saving->amount + $interest;
         $penalty = 0;
 
         // Apply penalty if early withdrawal
-        if (!$saving->canWithdraw()) {
+        if (!$canWithdrawNormally) {
             $penalty = $saving->getWithdrawalPenalty();
             $totalAmount -= $penalty;
         }
 
         // Credit wallet
         $wallet = auth()->user()->wallet;
-        $wallet->balance += $totalAmount;
-        $wallet->save();
+        $balanceBefore = $wallet->balance;
+        $wallet->increment('balance', (float)$totalAmount);
 
         // Update saving
         $saving->update([
@@ -148,33 +171,36 @@ class SavingsController extends Controller
 
         // Log transaction
         $wallet->transactions()->create([
+            'user_id' => auth()->id(),
+            'reference' => 'SAV-' . uniqid(),
             'type' => 'savings_withdrawal',
             'amount' => $totalAmount,
-            'balance_after' => $wallet->balance,
+            'balance_before' => (float)$balanceBefore,
+            'balance_after' => (float)$wallet->fresh()->balance,
             'description' => "Withdrawal from {$saving->savingsPlan->name}" . ($penalty > 0 ? " (Penalty: ₦" . number_format($penalty) . ")" : ""),
             'status' => 'completed'
         ]);
 
         // Send email notification
-        SavingsNotificationService::sendWithdrawalEmail($saving, $totalAmount, $penalty);
+        NotificationService::sendSavingsWithdrawalEmail($saving, (float)$totalAmount, (float)$interest);
 
         return response()->json([
             'message' => 'Withdrawal successful',
-            'amount' => $totalAmount,
-            'penalty' => $penalty,
-            'interest' => $interest
+            'amount' => (float)$totalAmount,
+            'penalty' => (float)$penalty,
+            'interest' => (float)$interest
         ]);
     }
 
     public function addFunds(Request $request, $id)
     {
         $saving = auth()->user()->userSavings()
-            ->with('savingsPlan')
+            ->with(['savingsPlan', 'duration'])
             ->where('status', 'active')
             ->findOrFail($id);
 
-        // Only allow adding funds to flexible plans
-        if (!$saving->savingsPlan->isFlexible()) {
+        // Only allow adding funds to flexible plans (duration with 0 lock days)
+        if ($saving->duration && $saving->duration->lock_period_days > 0) {
             return response()->json([
                 'message' => 'Cannot add funds to locked savings'
             ], 400);
@@ -190,22 +216,30 @@ class SavingsController extends Controller
             return response()->json(['message' => 'Insufficient wallet balance'], 400);
         }
 
+        // Store balance before
+        $balanceBefore = $wallet->balance;
+
         // Deduct from wallet
-        $wallet->balance -= $request->amount;
-        $wallet->save();
+        $wallet->decrement('balance', (float)$request->amount);
 
         // Add to savings
-        $saving->amount += $request->amount;
+        $saving->amount += (float)$request->amount;
         $saving->save();
 
         // Log transaction
         $wallet->transactions()->create([
+            'user_id' => auth()->id(),
+            'reference' => 'SAV-' . uniqid(),
             'type' => 'savings_deposit',
             'amount' => $request->amount,
-            'balance_after' => $wallet->balance,
+            'balance_before' => (float)$balanceBefore,
+            'balance_after' => (float)$wallet->fresh()->balance,
             'description' => "Additional deposit to {$saving->savingsPlan->name}",
             'status' => 'completed'
         ]);
+
+        // Send email notification
+        NotificationService::sendSavingsContributionEmail($saving, (float)$request->amount);
 
         return response()->json([
             'message' => 'Funds added successfully',

@@ -10,6 +10,8 @@ class UserSaving extends Model
     protected $fillable = [
         'user_id',
         'savings_plan_id',
+        'savings_plan_duration_id',
+        'name',
         'amount',
         'accrued_interest',
         'maturity_date',
@@ -32,13 +34,22 @@ class UserSaving extends Model
         return $this->belongsTo(SavingsPlan::class);
     }
 
+    public function duration()
+    {
+        return $this->belongsTo(SavingsPlanDuration::class, 'savings_plan_duration_id');
+    }
+
     public function calculateInterest()
     {
-        $plan = $this->savingsPlan;
+        $duration = $this->duration;
+        if (!$duration) {
+            return 0;
+        }
+        
         $daysElapsed = Carbon::parse($this->created_at)->diffInDays(now());
         
         // Daily interest calculation
-        $dailyRate = ($plan->interest_rate / 100) / 365;
+        $dailyRate = ($duration->interest_rate / 100) / 365;
         $interest = $this->amount * $dailyRate * $daysElapsed;
         
         return round($interest, 2);
@@ -51,8 +62,12 @@ class UserSaving extends Model
 
     public function canWithdraw()
     {
+        $duration = $this->duration;
+        if (!$duration) {
+            return true;
+        }
         // Flexible plan (no lock) or maturity date passed
-        return $this->savingsPlan->lock_period_days === 0 || 
+        return $duration->lock_period_days === 0 || 
                now()->gte($this->maturity_date);
     }
 
@@ -61,6 +76,10 @@ class UserSaving extends Model
         if ($this->canWithdraw()) {
             return 0;
         }
-        return ($this->savingsPlan->early_withdrawal_penalty / 100) * $this->amount;
+        $duration = $this->duration;
+        if (!$duration) {
+            return 0;
+        }
+        return ($duration->early_withdrawal_penalty / 100) * $this->amount;
     }
 }

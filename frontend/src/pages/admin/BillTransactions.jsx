@@ -83,8 +83,44 @@ export default function BillTransactions() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="animate-spin text-primary-600" size={32} />
+        <div className="space-y-6">
+          <div>
+            <div className="animate-pulse bg-gray-200 rounded w-40 h-7 mb-2" />
+            <div className="animate-pulse bg-gray-200 rounded w-72 h-4" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="card text-center">
+                <div className="animate-pulse bg-gray-200 rounded w-16 h-7 mx-auto mb-1" />
+                <div className="animate-pulse bg-gray-200 rounded w-20 h-4 mx-auto" />
+              </div>
+            ))}
+          </div>
+          <div className="card flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+            <div className="animate-pulse bg-gray-200 rounded-lg flex-1 h-10" />
+            <div className="flex gap-2">
+              <div className="animate-pulse bg-gray-200 rounded-lg w-32 h-8" />
+              <div className="animate-pulse bg-gray-200 rounded-lg w-28 h-8" />
+            </div>
+          </div>
+          <div className="card p-0">
+            <table className="table">
+              <thead><tr>{['Category','Biller','Customer','Amount','Status','Date','Reference'].map(h => <th key={h}><div className="animate-pulse bg-gray-200 rounded w-14 h-4" /></th>)}</tr></thead>
+              <tbody>
+                {[1,2,3,4,5].map(i => (
+                  <tr key={i}>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-20 h-6" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-24 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-20 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-16 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded-full w-16 h-6" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-20 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-24 h-4" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </AdminLayout>
     )

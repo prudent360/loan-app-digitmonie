@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
+import api from '../../services/api'
 import { Mail, Lock, User, Phone, Eye, EyeOff, Wallet, ArrowRight } from 'lucide-react'
 
 export default function Register() {
@@ -21,9 +22,11 @@ export default function Register() {
     if (formData.password.length < 8) { toast.error('Password must be at least 8 characters'); return }
     setLoading(true)
     try {
-      await register(formData)
-      toast.success('Registration successful!')
-      navigate('/dashboard')
+      const response = await api.post('/register', formData)
+      toast.success('Registration successful! Please verify your email.')
+      // Store basic user info for the prompt page
+      localStorage.setItem('user', JSON.stringify({ email: formData.email }))
+      navigate('/verify-email-prompt')
     } catch (err) {
       const errors = err.response?.data?.errors
       if (errors) Object.values(errors).flat().forEach(e => toast.error(e))

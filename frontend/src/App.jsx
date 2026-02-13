@@ -1,12 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
+import { User, LogOut } from 'lucide-react'
 
 // Pages
 import Landing from './pages/Landing'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import ForgotPassword from './pages/auth/ForgotPassword'
+import VerifyEmail from './pages/auth/VerifyEmail'
+import EmailVerificationPrompt from './pages/auth/EmailVerificationPrompt'
 
 import CustomerDashboard from './pages/customer/Dashboard'
 import CustomerLoans from './pages/customer/Loans'
@@ -32,6 +35,49 @@ import AdminWallets from './pages/admin/Wallets'
 import AdminPayments from './pages/admin/Payments'
 import AdminTransfers from './pages/admin/Transfers'
 import AdminLoanDetails from './pages/admin/LoanDetails'
+import AdminEmailTemplates from './pages/admin/EmailTemplates'
+
+// Internal components
+function ImpersonationBanner() {
+  const { user, updateUser } = useAuth()
+  const isAdminImpersonating = !!localStorage.getItem('admin_token')
+
+  if (!isAdminImpersonating) return null
+
+  const handleBackToAdmin = () => {
+    const adminToken = localStorage.getItem('admin_token')
+    const adminUserStr = localStorage.getItem('admin_user')
+    
+    if (!adminToken || !adminUserStr) return
+
+    const adminUser = JSON.parse(adminUserStr)
+
+    localStorage.setItem('token', adminToken)
+    localStorage.setItem('user', adminUserStr)
+    
+    localStorage.removeItem('admin_token')
+    localStorage.removeItem('admin_user')
+
+    updateUser(adminUser)
+    window.location.href = '/admin/users'
+  }
+
+  return (
+    <div className="bg-primary-600 text-white py-2 px-4 flex items-center justify-between sticky top-0 z-[100] shadow-md">
+      <div className="flex items-center gap-2 text-sm font-medium">
+        <User size={16} />
+        <span>Impersonating: <strong className="ml-1">{user?.name}</strong></span>
+      </div>
+      <button 
+        onClick={handleBackToAdmin}
+        className="bg-white text-primary-600 px-3 py-1 rounded text-xs font-bold hover:bg-gray-100 transition-colors flex items-center gap-1"
+      >
+        <LogOut size={12} />
+        Return to Admin
+      </button>
+    </div>
+  )
+}
 
 // Protected Route Component
 function ProtectedRoute({ children, requiredRole }) {
@@ -49,8 +95,18 @@ function ProtectedRoute({ children, requiredRole }) {
     return <Navigate to="/login" replace />
   }
   
-  if (requiredRole && user.role !== requiredRole) {
-    return <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />
+  // Admin check covers all administrative roles
+  const isAdmin = ['super_admin', 'loan_manager', 'kyc_officer', 'support'].includes(user.role) || user.role === 'admin'
+  
+  if (requiredRole === 'admin' && !isAdmin) {
+    return <Navigate to="/dashboard" replace />
+  }
+  
+  if (requiredRole === 'customer' && isAdmin) {
+    // Admins can access customer dashboard via impersonation flag if we wanted, 
+    // but the current structure of AuthContext/Redirects makes them distinct.
+    // However, if they are impersonating, their user object HAS role='customer'.
+    return <Navigate to="/admin" replace />
   }
   
   return children
@@ -69,7 +125,8 @@ function PublicRoute({ children }) {
   }
   
   if (user) {
-    return <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />
+    const isAdmin = ['super_admin', 'loan_manager', 'kyc_officer', 'support'].includes(user.role) || user.role === 'admin'
+    return <Navigate to={isAdmin ? '/admin' : '/dashboard'} replace />
   }
   
   return children
@@ -82,7 +139,9 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-      <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+      <Route path="/verify-email/:id/:hash" element={<VerifyEmail />} />
+      <Route path="/verify-email-prompt" element={<EmailVerificationPrompt />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       
       {/* Customer Routes */}
       <Route path="/dashboard" element={<ProtectedRoute requiredRole="customer"><CustomerDashboard /></ProtectedRoute>} />
@@ -108,6 +167,7 @@ function AppRoutes() {
       <Route path="/admin/wallets" element={<ProtectedRoute requiredRole="admin"><AdminWallets /></ProtectedRoute>} />
       <Route path="/admin/transfers" element={<ProtectedRoute requiredRole="admin"><AdminTransfers /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute requiredRole="admin"><AdminSettings /></ProtectedRoute>} />
+      <Route path="/admin/email-templates" element={<ProtectedRoute requiredRole="admin"><AdminEmailTemplates /></ProtectedRoute>} />
       <Route path="/admin/roles" element={<ProtectedRoute requiredRole="admin"><AdminRoles /></ProtectedRoute>} />
       
       {/* Fallback */}
@@ -121,6 +181,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
+          <ImpersonationBanner />
           <AppRoutes />
         </ToastProvider>
       </AuthProvider>

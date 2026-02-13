@@ -78,8 +78,15 @@ class RoleSeeder extends Seeder
                 'phone' => '+234 800 000 0000',
                 'role' => 'admin',
                 'status' => 'active',
+                'email_verified_at' => now(),
             ]
         );
+
+        // Ensure existing admin is verified
+        if (!$adminUser->email_verified_at) {
+            $adminUser->email_verified_at = now();
+            $adminUser->save();
+        }
 
         if (!$adminUser->hasRole('super_admin')) {
             $adminUser->roles()->attach($superAdminRole);

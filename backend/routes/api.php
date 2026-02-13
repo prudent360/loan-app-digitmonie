@@ -31,6 +31,10 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 
+// Email Verification
+Route::get('/email/verify/{id}/{hash}', [\App\Http\Controllers\Auth\VerificationController::class, 'verify'])->name('verification.verify');
+Route::post('/email/verification-notification', [\App\Http\Controllers\Auth\VerificationController::class, 'resend'])->middleware(['auth:sanctum']);
+
 // Get active currency (public)
 Route::get('/currency', [SettingsController::class, 'getActiveCurrency']);
 
@@ -137,7 +141,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware('permission:manage_users')->group(function () {
             Route::get('/users', [UserController::class, 'index']);
             Route::get('/users/{user}', [UserController::class, 'show']);
+            Route::put('/users/{user}', [UserController::class, 'update']);
+            Route::delete('/users/{user}', [UserController::class, 'destroy']);
             Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
+            Route::post('/users/{user}/impersonate', [UserController::class, 'impersonate']);
         });
 
         // Roles - require assign_roles permission (super_admin only)
@@ -160,6 +167,12 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/loans/{loan}/reject', [AdminLoanController::class, 'reject']);
             Route::post('/loans/{loan}/disburse', [AdminLoanController::class, 'disburse']);
             Route::get('/loans/{loan}/repayments', [AdminPaymentController::class, 'getLoanRepayments']);
+            
+            // Loan Timeline Steps
+            Route::get('/loans/{loan}/timeline', [\App\Http\Controllers\Admin\LoanTimelineController::class, 'index']);
+            Route::put('/loans/{loan}/timeline/{timelineStep}', [\App\Http\Controllers\Admin\LoanTimelineController::class, 'update']);
+            Route::post('/loans/{loan}/timeline/{timelineStep}/complete', [\App\Http\Controllers\Admin\LoanTimelineController::class, 'complete']);
+            Route::post('/loans/{loan}/timeline/reset', [\App\Http\Controllers\Admin\LoanTimelineController::class, 'reset']);
         });
 
         // Payments - require manage_loans permission
@@ -182,6 +195,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/settings', [SettingsController::class, 'update']);
             Route::post('/settings/logo', [SettingsController::class, 'uploadLogo']);
             Route::delete('/settings/logo', [SettingsController::class, 'deleteLogo']);
+            Route::post('/settings/test-email', [SettingsController::class, 'sendTestEmail']);
         });
 
         // Bill Transactions - view all bill payment transactions
@@ -206,16 +220,21 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/savings/{id}', [\App\Http\Controllers\Admin\SavingsController::class, 'update']);
         Route::delete('/savings/{id}', [\App\Http\Controllers\Admin\SavingsController::class, 'destroy']);
         Route::post('/savings/{id}/toggle', [\App\Http\Controllers\Admin\SavingsController::class, 'toggleStatus']);
+        Route::post('/savings/subscriptions/{id}/release', [\App\Http\Controllers\Admin\SavingsController::class, 'release']);
+
+        // Email Templates - require manage_settings permission
+        Route::middleware('permission:manage_settings')->group(function () {
+            Route::get('/email-templates', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'index']);
+            Route::get('/email-templates/{id}', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'show']);
+            Route::put('/email-templates/{id}', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'update']);
+            Route::post('/email-templates/{id}/toggle', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'toggle']);
+            Route::get('/email-templates/{id}/preview', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'preview']);
+            Route::post('/email-templates/{id}/reset', [\App\Http\Controllers\Admin\EmailTemplateController::class, 'reset']);
+        });
 
         // Bank Transfer Requests - admin management
         Route::get('/transfers', [\App\Http\Controllers\Admin\TransferController::class, 'index']);
         Route::post('/transfers/{transferRequest}/approve', [\App\Http\Controllers\Admin\TransferController::class, 'approve']);
         Route::post('/transfers/{transferRequest}/reject', [\App\Http\Controllers\Admin\TransferController::class, 'reject']);
-
-        // Loan Timeline Steps - admin management
-        Route::get('/loans/{loan}/timeline', [\App\Http\Controllers\Admin\LoanTimelineController::class, 'index']);
-        Route::put('/loans/{loan}/timeline/{step}', [\App\Http\Controllers\Admin\LoanTimelineController::class, 'update']);
-        Route::post('/loans/{loan}/timeline/{step}/complete', [\App\Http\Controllers\Admin\LoanTimelineController::class, 'complete']);
-        Route::post('/loans/{loan}/timeline/reset', [\App\Http\Controllers\Admin\LoanTimelineController::class, 'reset']);
     });
 });

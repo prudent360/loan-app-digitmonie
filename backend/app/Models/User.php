@@ -7,8 +7,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\URL;
 
-class User extends Authenticatable
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -125,5 +128,23 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    public function sendEmailVerificationNotification()
+    {
+        $signedUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $this->id, 'hash' => sha1($this->getEmailForVerification())]
+        );
+
+        // Replace backend URL with frontend URL
+        $frontendUrl = env('FRONTEND_URL', app()->environment('production') ? 'https://digitmonie.com' : 'http://localhost:5173');
+        
+        // Signed URL is like: http://localhost/api/email/verify/1/hash?expires=...&signature=...
+        // We want: http://localhost:5173/verify-email/1/hash?expires=...&signature=...
+        $verificationUrl = str_replace(url('/api/email/verify'), $frontendUrl . '/verify-email', $signedUrl);
+
+        \App\Services\NotificationService::sendWelcomeEmail($this, $verificationUrl);
     }
 }

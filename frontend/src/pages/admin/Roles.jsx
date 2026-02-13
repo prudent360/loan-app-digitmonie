@@ -191,7 +191,39 @@ export default function AdminRoles() {
   }
 
   if (loading) {
-    return <AdminLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-primary-600" size={32} /></div></AdminLayout>
+    return (
+      <AdminLayout>
+        <div className="space-y-6">
+          <div>
+            <div className="animate-pulse bg-gray-200 rounded w-44 h-7 mb-2" />
+            <div className="animate-pulse bg-gray-200 rounded w-56 h-4" />
+          </div>
+          <div className="flex gap-2 border-b border-border pb-1">
+            <div className="animate-pulse bg-gray-200 rounded-t-lg w-40 h-10" />
+            <div className="animate-pulse bg-gray-200 rounded-t-lg w-36 h-10" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="card">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="animate-pulse bg-gray-200 rounded w-32 h-5 mb-1" />
+                    <div className="animate-pulse bg-gray-200 rounded w-48 h-4" />
+                  </div>
+                  <div className="flex gap-1">
+                    <div className="animate-pulse bg-gray-200 rounded w-7 h-7" />
+                    <div className="animate-pulse bg-gray-200 rounded w-7 h-7" />
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-3 border-t border-border">
+                  {[1,2,3].map(j => <div key={j} className="animate-pulse bg-gray-200 rounded-full w-20 h-6" />)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </AdminLayout>
+    )
   }
 
   return (

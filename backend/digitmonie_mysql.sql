@@ -26,8 +26,8 @@ CREATE TABLE IF NOT EXISTS `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert admin user (password: password123)
-INSERT INTO `users` (`id`, `name`, `email`, `password`, `phone`, `role`, `status`, `kyc_status`, `created_at`, `updated_at`) VALUES
-(1, 'Super Admin', 'admin@digitmonie.com', '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+234 800 000 0000', 'admin', 'active', 'verified', NOW(), NOW());
+INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `phone`, `role`, `status`, `kyc_status`, `created_at`, `updated_at`) VALUES
+(1, 'Super Admin', 'admin@digitmonie.com', NOW(), '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '+234 800 000 0000', 'admin', 'active', 'verified', NOW(), NOW());
 
 -- Cache table
 CREATE TABLE IF NOT EXISTS `cache` (

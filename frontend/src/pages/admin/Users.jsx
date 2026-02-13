@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import AdminLayout from '../../components/layouts/AdminLayout'
 import { useToast } from '../../context/ToastContext'
 import { adminAPI } from '../../services/api'
-import { Search, Eye, UserCheck, UserX, X, Loader2 } from 'lucide-react'
+import { Search, Eye, UserCheck, UserX, X, Loader2, Pencil, Trash2 } from 'lucide-react'
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([])
@@ -11,6 +11,10 @@ export default function AdminUsers() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedUser, setSelectedUser] = useState(null)
+  const [editUser, setEditUser] = useState(null)
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', status: '' })
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(null)
   const toast = useToast()
 
   // Fetch users from API
@@ -51,12 +55,88 @@ export default function AdminUsers() {
     }
   }
 
+  const handleOpenEdit = (user) => {
+    setEditUser(user)
+    setEditForm({
+      name: user.name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      status: user.status || 'active'
+    })
+  }
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const res = await adminAPI.updateUser(editUser.id, editForm)
+      setUsers(prev => prev.map(u => u.id === editUser.id ? { ...u, ...res.data.user } : u))
+      toast.success('User updated successfully')
+      setEditUser(null)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update user')
+      console.error(err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (user) => {
+    if (!confirm(`Are you sure you want to delete ${user.name}? This will permanently remove their account and all associated data.`)) {
+      return
+    }
+    setDeleting(user.id)
+    try {
+      await adminAPI.deleteUser(user.id)
+      setUsers(prev => prev.filter(u => u.id !== user.id))
+      toast.success('User deleted successfully')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete user')
+      console.error(err)
+    } finally {
+      setDeleting(null)
+    }
+  }
+
   const getStatusBadge = (s) => ({ active: 'badge-success', pending: 'badge-warning', suspended: 'badge-error' }[s] || '')
   const getKYCBadge = (s) => ({ verified: 'badge-success', pending: 'badge-warning', rejected: 'badge-error' }[s] || 'badge-warning')
   const formatDate = (d) => d ? new Date(d).toLocaleDateString() : '-'
 
   if (loading) {
-    return <AdminLayout><div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-primary-600" size={32} /></div></AdminLayout>
+    return (
+      <AdminLayout>
+        <div className="space-y-6">
+          <div>
+            <div className="animate-pulse bg-gray-200 rounded w-40 h-7 mb-2" />
+            <div className="animate-pulse bg-gray-200 rounded w-56 h-4" />
+          </div>
+          <div className="card flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+            <div className="animate-pulse bg-gray-200 rounded-lg flex-1 h-10" />
+            <div className="flex gap-2">
+              {[1,2,3,4].map(i => <div key={i} className="animate-pulse bg-gray-200 rounded-lg w-20 h-8" />)}
+            </div>
+          </div>
+          <div className="card p-0">
+            <table className="table">
+              <thead><tr>{['User','Contact','Status','KYC','Loans','Joined','Actions'].map(h => <th key={h}><div className="animate-pulse bg-gray-200 rounded w-16 h-4" /></th>)}</tr></thead>
+              <tbody>
+                {[1,2,3,4,5].map(i => (
+                  <tr key={i}>
+                    <td><div className="flex items-center gap-3"><div className="animate-pulse bg-gray-200 rounded-full w-8 h-8" /><div><div className="animate-pulse bg-gray-200 rounded w-24 h-4 mb-1" /><div className="animate-pulse bg-gray-200 rounded w-32 h-3" /></div></div></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-24 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded-full w-16 h-6" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded-full w-16 h-6" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-8 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-20 h-4" /></td>
+                    <td><div className="animate-pulse bg-gray-200 rounded w-12 h-6" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </AdminLayout>
+    )
   }
 
   return (
@@ -100,12 +180,21 @@ export default function AdminUsers() {
                     <td className="text-text-muted text-sm">{formatDate(user.created_at)}</td>
                     <td>
                       <div className="flex gap-1">
-                        <a href={`/admin/users/${user.id}`} className="p-1.5 rounded text-text-muted hover:text-text hover:bg-muted"><Eye size={16} /></a>
+                        <a href={`/admin/users/${user.id}`} className="p-1.5 rounded text-text-muted hover:text-text hover:bg-muted" title="View"><Eye size={16} /></a>
+                        <button className="p-1.5 rounded text-text-muted hover:text-primary-600 hover:bg-primary-50" onClick={() => handleOpenEdit(user)} title="Edit"><Pencil size={16} /></button>
                         {user.status === 'active' ? (
-                          <button className="p-1.5 rounded text-text-muted hover:text-red-600 hover:bg-red-50" onClick={() => handleStatusChange(user.id, 'suspended')}><UserX size={16} /></button>
+                          <button className="p-1.5 rounded text-text-muted hover:text-orange-600 hover:bg-orange-50" onClick={() => handleStatusChange(user.id, 'suspended')} title="Suspend"><UserX size={16} /></button>
                         ) : (
-                          <button className="p-1.5 rounded text-text-muted hover:text-primary-600 hover:bg-primary-50" onClick={() => handleStatusChange(user.id, 'active')}><UserCheck size={16} /></button>
+                          <button className="p-1.5 rounded text-text-muted hover:text-green-600 hover:bg-green-50" onClick={() => handleStatusChange(user.id, 'active')} title="Activate"><UserCheck size={16} /></button>
                         )}
+                        <button 
+                          className="p-1.5 rounded text-text-muted hover:text-red-600 hover:bg-red-50" 
+                          onClick={() => handleDelete(user)} 
+                          disabled={deleting === user.id}
+                          title="Delete"
+                        >
+                          {deleting === user.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -115,7 +204,46 @@ export default function AdminUsers() {
           </table>
         </div>
 
-        {/* User Modal */}
+        {/* Edit User Modal */}
+        {editUser && (
+          <div className="modal-overlay" onClick={() => setEditUser(null)}>
+            <div className="modal-content max-w-md" onClick={e => e.stopPropagation()}>
+              <div className="modal-header"><h3 className="font-semibold text-text">Edit User</h3><button onClick={() => setEditUser(null)}><X size={20} /></button></div>
+              <form onSubmit={handleEditSubmit}>
+                <div className="modal-body space-y-4">
+                  <div className="form-group">
+                    <label className="form-label">Name *</label>
+                    <input type="text" className="form-input" value={editForm.name} onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Email *</label>
+                    <input type="email" className="form-input" value={editForm.email} onChange={e => setEditForm(prev => ({ ...prev, email: e.target.value }))} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Phone</label>
+                    <input type="text" className="form-input" value={editForm.phone} onChange={e => setEditForm(prev => ({ ...prev, phone: e.target.value }))} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Status</label>
+                    <select className="form-select" value={editForm.status} onChange={e => setEditForm(prev => ({ ...prev, status: e.target.value }))}>
+                      <option value="active">Active</option>
+                      <option value="pending">Pending</option>
+                      <option value="suspended">Suspended</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-outline" onClick={() => setEditUser(null)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" disabled={saving}>
+                    {saving ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* View User Modal (kept for compatibility) */}
         {selectedUser && (
           <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -145,3 +273,4 @@ export default function AdminUsers() {
     </AdminLayout>
   )
 }
+

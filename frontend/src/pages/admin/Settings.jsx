@@ -2,9 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import AdminLayout from '../../components/layouts/AdminLayout'
 import { useToast } from '../../context/ToastContext'
 import api, { adminAPI } from '../../services/api'
-import { Save, DollarSign, Percent, Mail, Loader2, CreditCard, Eye, EyeOff, Upload, Trash2, Image, Settings, FileText, PiggyBank, Edit2, RotateCcw, X, Code } from 'lucide-react'
-import ReactQuill from 'react-quill-new'
-import 'react-quill-new/dist/quill.snow.css'
+import { Save, DollarSign, Percent, Loader2, CreditCard, Eye, EyeOff, Upload, Trash2, Image, Settings, FileText, Mail, Server, CheckCircle, Send } from 'lucide-react'
 
 const defaultCurrencies = [
   { code: 'NGN', symbol: '₦', name: 'Nigerian Naira', active: true },
@@ -35,7 +33,7 @@ const tabs = [
   { id: 'general', label: 'General', icon: Settings },
   { id: 'loan', label: 'Loan Configuration', icon: Percent },
   { id: 'payment', label: 'Payment Settings', icon: CreditCard },
-  { id: 'email', label: 'Email Templates', icon: Mail },
+  { id: 'email', label: 'Email / SMTP', icon: Mail },
 ]
 
 export default function AdminSettings() {
@@ -46,48 +44,27 @@ export default function AdminSettings() {
   const [currencies, setCurrencies] = useState(defaultCurrencies)
   const [loanSettings, setLoanSettings] = useState({ min_amount: 50000, max_amount: 5000000, min_tenure: 3, max_tenure: 36, default_interest_rate: 15, admin_fee: 2 })
   const [notificationSettings, setNotificationSettings] = useState({ reminder_days_before: 3, overdue_notification: true, approval_notification: true, disbursement_notification: true })
+  const [emailSettings, setEmailSettings] = useState({ mail_mailer: 'smtp', mail_host: '', mail_port: 587, mail_username: '', mail_password: '', mail_encryption: 'tls', mail_from_address: '', mail_from_name: '' })
   const [paymentGateways, setPaymentGateways] = useState(defaultPaymentGateways)
-  const [showSecrets, setShowSecrets] = useState({ paystack: false, flutterwave: false })
+  const [showSecrets, setShowSecrets] = useState({ paystack: false, flutterwave: false, mail_password: false })
+  const [testingEmail, setTestingEmail] = useState(false)
+  const [testEmailAddress, setTestEmailAddress] = useState('')
   const [logoUrl, setLogoUrl] = useState(null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const logoInputRef = useRef(null)
-
-  // Email templates state
-  const [emailTemplates, setEmailTemplates] = useState([
-    { id: 'loan_approved', name: 'Loan Approved', subject: 'Your Loan Has Been Approved!', enabled: true },
-    { id: 'loan_rejected', name: 'Loan Rejected', subject: 'Loan Application Update', enabled: true },
-    { id: 'loan_disbursed', name: 'Loan Disbursed', subject: 'Your Loan Has Been Disbursed', enabled: true },
-    { id: 'payment_reminder', name: 'Payment Reminder', subject: 'Upcoming Payment Reminder', enabled: true },
-    { id: 'payment_received', name: 'Payment Received', subject: 'Payment Confirmation', enabled: true },
-    { id: 'payment_overdue', name: 'Payment Overdue', subject: 'Urgent: Payment Overdue', enabled: true },
-    { id: 'kyc_verified', name: 'KYC Verified', subject: 'KYC Verification Complete', enabled: true },
-    { id: 'kyc_rejected', name: 'KYC Rejected', subject: 'KYC Verification Update', enabled: true },
-  ])
-
-  // Savings email templates state
-  const [savingsTemplates, setSavingsTemplates] = useState({})
-  const [savingsShortcodes, setSavingsShortcodes] = useState({})
-  const [editingTemplate, setEditingTemplate] = useState(null)
-  const [templateForm, setTemplateForm] = useState({ subject: '', template: '' })
-  const [savingTemplate, setSavingTemplate] = useState(false)
 
   // Load settings on mount
   useEffect(() => {
     const loadSettings = async () => {
       setLoading(true)
       try {
-        const [settingsRes, savingsRes] = await Promise.all([
-          adminAPI.getSettings(),
-          api.get('/admin/savings/email-templates').catch(() => ({ data: {} }))
-        ])
+        const settingsRes = await adminAPI.getSettings()
         if (settingsRes.data.currencies?.length) setCurrencies(settingsRes.data.currencies)
         if (settingsRes.data.loan_settings) setLoanSettings(settingsRes.data.loan_settings)
         if (settingsRes.data.notification_settings) setNotificationSettings(settingsRes.data.notification_settings)
         if (settingsRes.data.payment_gateways) setPaymentGateways(settingsRes.data.payment_gateways)
+        if (settingsRes.data.email_settings) setEmailSettings(settingsRes.data.email_settings)
         if (settingsRes.data.logo_url) setLogoUrl(settingsRes.data.logo_url)
-        if (settingsRes.data.email_templates) setEmailTemplates(settingsRes.data.email_templates)
-        if (savingsRes.data.templates) setSavingsTemplates(savingsRes.data.templates)
-        if (savingsRes.data.shortcodes) setSavingsShortcodes(savingsRes.data.shortcodes)
       } catch (err) {
         console.error('Failed to load settings:', err)
       } finally {
@@ -124,48 +101,21 @@ export default function AdminSettings() {
     }))
   }
 
-  const handleEmailTemplateToggle = (templateId) => {
-    setEmailTemplates(prev => prev.map(t => t.id === templateId ? { ...t, enabled: !t.enabled } : t))
+  const handleEmailSettingsChange = (e) => {
+    const { name, value } = e.target
+    setEmailSettings(prev => ({ ...prev, [name]: value }))
   }
 
-  const openTemplateEditor = (type, name) => {
-    const template = savingsTemplates[type]
-    setEditingTemplate({ type, name })
-    setTemplateForm({
-      subject: template?.subject || '',
-      template: template?.template || ''
-    })
-  }
-
-  const handleSaveTemplate = async () => {
-    setSavingTemplate(true)
+  const handleSendTestEmail = async () => {
+    if (!testEmailAddress) return toast.error('Please enter a test email address')
+    setTestingEmail(true)
     try {
-      await api.put('/admin/savings/email-templates', {
-        type: editingTemplate.type,
-        subject: templateForm.subject,
-        template: templateForm.template
-      })
-      setSavingsTemplates(prev => ({
-        ...prev,
-        [editingTemplate.type]: { subject: templateForm.subject, template: templateForm.template }
-      }))
-      toast.success('Template saved!')
-      setEditingTemplate(null)
+      await adminAPI.sendTestEmail(testEmailAddress)
+      toast.success('Test email sent successfully!')
     } catch (err) {
-      toast.error('Failed to save template')
+      toast.error(err.response?.data?.message || 'Failed to send test email')
     } finally {
-      setSavingTemplate(false)
-    }
-  }
-
-  const handleResetTemplate = async (type) => {
-    if (!confirm('Reset this template to default?')) return
-    try {
-      const res = await api.post('/admin/savings/email-templates/reset', { type })
-      setSavingsTemplates(prev => ({ ...prev, [type]: res.data.template }))
-      toast.success('Template reset to default')
-    } catch (err) {
-      toast.error('Failed to reset template')
+      setTestingEmail(false)
     }
   }
 
@@ -177,7 +127,7 @@ export default function AdminSettings() {
         loan_settings: loanSettings,
         notification_settings: notificationSettings,
         payment_gateways: paymentGateways,
-        email_templates: emailTemplates,
+        email_settings: emailSettings,
       })
       toast.success('Settings saved successfully!')
     } catch (err) {
@@ -232,7 +182,7 @@ export default function AdminSettings() {
   const getLogoDisplayUrl = (url) => {
     if (!url) return null
     if (url.startsWith('http')) return url
-    return `${import.meta.env.PROD ? 'https://app.digitmonie.com/api' : 'http://localhost:8001'}${url}`
+    return `${import.meta.env.PROD ? 'https://digitmonie.com/api' : 'http://localhost:8001'}${url}`
   }
 
   if (loading) {
@@ -572,203 +522,93 @@ export default function AdminSettings() {
             </div>
           )}
 
-          {/* Email Templates Tab */}
+          {/* Email Settings Tab */}
           {activeTab === 'email' && (
             <div className="space-y-6">
-              {/* Notification Settings */}
+              <div className="card">
+                <div className="flex items-center gap-2 mb-1">
+                  <Server size={18} className="text-primary-600" />
+                  <h3 className="text-sm font-medium text-text">SMTP Configuration</h3>
+                </div>
+                <p className="text-xs text-text-muted mb-4">Configure your outgoing email server settings</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-group">
+                    <label className="form-label">Mail Driver</label>
+                    <select name="mail_mailer" className="form-select" value={emailSettings.mail_mailer} onChange={handleEmailSettingsChange}>
+                      <option value="smtp">SMTP</option>
+                      <option value="sendmail">Sendmail</option>
+                      <option value="log">Log (Testing)</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">SMTP Host</label>
+                    <input type="text" name="mail_host" className="form-input" placeholder="smtp.mailtrap.io" value={emailSettings.mail_host} onChange={handleEmailSettingsChange} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Port</label>
+                    <input type="number" name="mail_port" className="form-input" placeholder="587" value={emailSettings.mail_port} onChange={handleEmailSettingsChange} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Encryption</label>
+                    <select name="mail_encryption" className="form-select" value={emailSettings.mail_encryption} onChange={handleEmailSettingsChange}>
+                      <option value="tls">TLS</option>
+                      <option value="ssl">SSL</option>
+                      <option value="none">None</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Username</label>
+                    <input type="text" name="mail_username" className="form-input" placeholder="your-username" value={emailSettings.mail_username} onChange={handleEmailSettingsChange} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Password</label>
+                    <div className="relative">
+                      <input type={showSecrets.mail_password ? 'text' : 'password'} name="mail_password" className="form-input pr-10" placeholder="••••••••" value={emailSettings.mail_password} onChange={handleEmailSettingsChange} />
+                      <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text" onClick={() => setShowSecrets(prev => ({ ...prev, mail_password: !prev.mail_password }))}>
+                        {showSecrets.mail_password ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="card">
                 <div className="flex items-center gap-2 mb-1">
                   <Mail size={18} className="text-primary-600" />
-                  <h3 className="text-sm font-medium text-text">Notification Preferences</h3>
+                  <h3 className="text-sm font-medium text-text">Sender Information</h3>
                 </div>
-                <p className="text-xs text-text-muted mb-4">Configure when to send email notifications</p>
-                <div className="form-group">
-                  <label className="form-label">Payment Reminder (days before due date)</label>
-                  <input type="number" name="reminder_days_before" className="form-input max-w-32" value={notificationSettings.reminder_days_before} onChange={handleNotificationChange} />
-                </div>
-                <div className="space-y-3 mt-4">
-                  {[['approval_notification', 'Send email when loan is approved'], ['disbursement_notification', 'Send email when loan is disbursed'], ['overdue_notification', 'Send email for overdue payments']].map(([name, title]) => (
-                    <label key={name} className="flex items-center gap-3 cursor-pointer">
-                      <input type="checkbox" name={name} checked={notificationSettings[name]} onChange={handleNotificationChange} className="w-4 h-4 accent-primary-600 rounded" />
-                      <span className="text-sm text-text">{title}</span>
-                    </label>
-                  ))}
+                <p className="text-xs text-text-muted mb-4">Set the "From" address and name for outgoing emails</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="form-group">
+                    <label className="form-label">From Address</label>
+                    <input type="email" name="mail_from_address" className="form-input" placeholder="noreply@digitmonie.com" value={emailSettings.mail_from_address} onChange={handleEmailSettingsChange} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">From Name</label>
+                    <input type="text" name="mail_from_name" className="form-input" placeholder="Digitmonie" value={emailSettings.mail_from_name} onChange={handleEmailSettingsChange} />
+                  </div>
                 </div>
               </div>
 
-              {/* Email Templates List */}
-              <div className="card">
+              <div className="card border-primary-100 bg-primary-50/30">
                 <div className="flex items-center gap-2 mb-1">
-                  <FileText size={18} className="text-primary-600" />
-                  <h3 className="text-sm font-medium text-text">Email Templates</h3>
+                  <Send size={18} className="text-primary-600" />
+                  <h3 className="text-sm font-medium text-text">Test Configuration</h3>
                 </div>
-                <p className="text-xs text-text-muted mb-4">Enable or disable specific email templates</p>
-                <div className="space-y-2">
-                  {emailTemplates.map((template) => (
-                    <div key={template.id} className="flex items-center justify-between p-3 border border-border rounded-lg hover:border-primary-300 transition-all">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${template.enabled ? 'bg-primary-100 text-primary-600' : 'bg-muted text-text-muted'}`}>
-                          <Mail size={18} />
-                        </div>
-                        <div>
-                          <strong className="text-text text-sm">{template.name}</strong>
-                          <p className="text-xs text-text-muted">{template.subject}</p>
-                        </div>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={template.enabled}
-                          onChange={() => handleEmailTemplateToggle(template.id)}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Savings Email Templates */}
-              <div className="card">
-                <div className="flex items-center gap-2 mb-1">
-                  <PiggyBank size={18} className="text-primary-600" />
-                  <h3 className="text-sm font-medium text-text">Savings Email Templates</h3>
-                </div>
-                <p className="text-xs text-text-muted mb-4">Customize email templates for savings notifications with shortcodes</p>
-                
-                {/* Shortcodes Reference */}
-                <div className="bg-muted/50 border border-border rounded-lg p-3 mb-4">
-                  <div className="flex items-center gap-2 text-xs text-text-muted mb-2">
-                    <Code size={14} />
-                    <span className="font-medium">Available Shortcodes:</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(savingsShortcodes).map(([code, desc]) => (
-                      <span key={code} className="text-xs bg-white px-2 py-1 rounded border" title={desc}>
-                        {code}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  {[
-                    { type: 'savings_new', name: 'New Savings', desc: 'When customer creates savings' },
-                    { type: 'savings_withdrawal', name: 'Withdrawal', desc: 'When customer withdraws' },
-                    { type: 'savings_matured', name: 'Maturity', desc: 'When lock period ends' },
-                    { type: 'savings_deposit', name: 'Deposit', desc: 'When customer adds funds' },
-                  ].map((item) => (
-                    <div key={item.type} className="flex items-center justify-between p-3 border border-border rounded-lg hover:border-primary-300 transition-all">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
-                          <PiggyBank size={18} />
-                        </div>
-                        <div>
-                          <strong className="text-text text-sm">{item.name}</strong>
-                          <p className="text-xs text-text-muted">{item.desc}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => openTemplateEditor(item.type, item.name)}
-                          className="btn btn-outline btn-sm"
-                        >
-                          <Edit2 size={14} /> Edit
-                        </button>
-                        <button
-                          onClick={() => handleResetTemplate(item.type)}
-                          className="btn btn-outline btn-sm text-orange-600 hover:bg-orange-50"
-                          title="Reset to default"
-                        >
-                          <RotateCcw size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                <p className="text-xs text-text-muted mb-4">Enter an email address to send a test message using the settings above</p>
+                <div className="flex gap-2">
+                  <input type="email" className="form-input" placeholder="test@example.com" value={testEmailAddress} onChange={(e) => setTestEmailAddress(e.target.value)} />
+                  <button className="btn btn-primary" onClick={handleSendTestEmail} disabled={testingEmail || !testEmailAddress}>
+                    {testingEmail ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                    {testingEmail ? 'Sending...' : 'Send Test Email'}
+                  </button>
                 </div>
               </div>
             </div>
           )}
         </div>
       </div>
-
-      {/* Template Editor Modal */}
-      {editingTemplate && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface rounded-2xl w-full max-w-4xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-text">
-                Edit {editingTemplate.name} Template
-              </h2>
-              <button onClick={() => setEditingTemplate(null)} className="text-text-muted hover:text-text">
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Shortcodes Reference */}
-            <div className="bg-muted/50 border border-border rounded-lg p-3 mb-4">
-              <div className="flex items-center gap-2 text-xs text-text-muted mb-2">
-                <Code size={14} />
-                <span className="font-medium">Shortcodes you can use:</span>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-                {Object.entries(savingsShortcodes).map(([code, desc]) => (
-                  <div key={code} className="flex items-center gap-2">
-                    <code className="bg-white px-1 py-0.5 rounded border text-primary-600">{code}</code>
-                    <span className="text-text-muted">{desc}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="form-label">Email Subject</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={templateForm.subject}
-                  onChange={(e) => setTemplateForm(prev => ({ ...prev, subject: e.target.value }))}
-                  placeholder="e.g., Your Savings Plan is Active! 🎉"
-                />
-              </div>
-              <div>
-                <label className="form-label">Email Body</label>
-                <div className="bg-white rounded-lg border border-border">
-                  <ReactQuill
-                    theme="snow"
-                    value={templateForm.template}
-                    onChange={(content) => setTemplateForm(prev => ({ ...prev, template: content }))}
-                    modules={{
-                      toolbar: [
-                        [{ 'header': [1, 2, 3, false] }],
-                        ['bold', 'italic', 'underline', 'strike'],
-                        [{ 'color': [] }, { 'background': [] }],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                        [{ 'align': [] }],
-                        ['link', 'image'],
-                        ['clean']
-                      ]
-                    }}
-                    style={{ minHeight: '300px' }}
-                  />
-                </div>
-                <p className="text-xs text-text-muted mt-2">Use shortcodes like {'{user_name}'} in your content. They will be replaced with actual values.</p>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button onClick={() => setEditingTemplate(null)} className="btn btn-outline flex-1">
-                Cancel
-              </button>
-              <button onClick={handleSaveTemplate} disabled={savingTemplate} className="btn btn-primary flex-1">
-                {savingTemplate ? <Loader2 className="animate-spin" size={18} /> : <><Save size={16} /> Save Template</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </AdminLayout>
   )
 }

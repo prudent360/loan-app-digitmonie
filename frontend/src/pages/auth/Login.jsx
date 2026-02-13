@@ -28,7 +28,13 @@ export default function Login() {
         navigate('/dashboard')
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Invalid credentials')
+      if (err.response?.status === 403 && err.response?.data?.requires_verification) {
+        // Store basic user info for the prompt page
+        localStorage.setItem('user', JSON.stringify({ email: err.response.data.email }))
+        navigate('/verify-email-prompt')
+      } else {
+        toast.error(err.response?.data?.message || 'Invalid credentials')
+      }
     } finally {
       setLoading(false)
     }

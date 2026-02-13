@@ -48,12 +48,17 @@ export default function AdminLoanDetails() {
   }
 
   const handleUpdateStep = async (stepId, status) => {
+    if (!confirm(`Are you sure you want to change this step status to ${status.replace('_', ' ')}?`)) return
+    
+    setTimelineLoading(true)
     try {
       await api.put(`/admin/loans/${id}/timeline/${stepId}`, { status })
       toast.success('Step updated!')
       loadTimeline()
     } catch (err) {
       toast.error('Failed to update step')
+    } finally {
+      setTimelineLoading(false)
     }
   }
 

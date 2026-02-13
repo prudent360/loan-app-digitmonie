@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\KycDocument;
+use App\Notifications\KycStatusNotification;
 use Illuminate\Http\Request;
 
 class KycController extends Controller
@@ -36,6 +37,18 @@ class KycController extends Controller
         // Check if all documents are approved - auto-verify user's KYC
         $this->checkAndUpdateUserKycStatus($document->user);
 
+        // Notify User if verified
+        try {
+            $user = $document->user;
+            if ($user->kyc_status === 'verified') {
+                $user->notify(new KycStatusNotification('verified', "Your identity documents have been verified successfully. You can now access all features."));
+            } else {
+                $user->notify(new KycStatusNotification('pending', "Your document '{$document->document_type}' has been approved. Other documents are still under review."));
+            }
+        } catch (\Exception $e) {
+            \Log::error("Notification failed: " . $e->getMessage());
+        }
+
         return response()->json([
             'message' => 'Document approved',
             'document' => $document,
@@ -58,6 +71,13 @@ class KycController extends Controller
             'reviewed_at' => now(),
             'rejection_reason' => $request->reason,
         ]);
+
+        // Notify User
+        try {
+            $document->user->notify(new KycStatusNotification('rejected', "Your document '{$document->document_type}' was rejected. Reason: " . $request->reason . ". Please upload a valid document."));
+        } catch (\Exception $e) {
+            \Log::error("Notification failed: " . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Document rejected',

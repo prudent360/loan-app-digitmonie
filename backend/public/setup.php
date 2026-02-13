@@ -3,7 +3,7 @@
  * DigitMonie Setup Script
  * 
  * Upload this file to your api/public/ folder and access it via browser:
- * https://app.digitmonie.com/api/setup.php
+ * https://digitmonie.com/api/setup.php
  * 
  * DELETE THIS FILE AFTER SETUP IS COMPLETE!
  */

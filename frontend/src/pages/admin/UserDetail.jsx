@@ -2,19 +2,22 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import AdminLayout from '../../components/layouts/AdminLayout'
 import { adminAPI } from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
 import { 
   ArrowLeft, User, Mail, Phone, Calendar, Shield, CreditCard, 
   FileText, Wallet, CheckCircle, XCircle, Clock, Edit, 
-  UserCheck, UserX, Loader2, AlertTriangle
+  UserCheck, UserX, Loader2, AlertTriangle, LogIn, PiggyBank
 } from 'lucide-react'
 
 export default function UserDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user: currentUser, updateUser } = useAuth()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [impersonating, setImpersonating] = useState(false)
 
   useEffect(() => {
     loadUser()
@@ -48,6 +51,53 @@ export default function UserDetail() {
     }
   }
 
+  const handleImpersonate = async () => {
+    if (!confirm(`Are you sure you want to login to ${user.name}'s account?`)) return
+    
+    setImpersonating(true)
+    try {
+      const res = await adminAPI.impersonateUser(id)
+      const { token, user: impersonatedUser } = res.data
+
+      // Save current admin session if not already impersonating
+      if (!localStorage.getItem('admin_token')) {
+        localStorage.setItem('admin_token', localStorage.getItem('token'))
+        localStorage.setItem('admin_user', localStorage.getItem('user'))
+      }
+
+      // Set new session
+      localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(impersonatedUser))
+      
+      // Update auth context
+      updateUser(impersonatedUser)
+
+      // Redirect to customer dashboard
+      navigate('/dashboard')
+    } catch (err) {
+      console.error('Impersonation failed:', err)
+      alert('Failed to login as user')
+    } finally {
+      setImpersonating(false)
+    }
+  }
+
+  const handleReleaseFunds = async (savingId) => {
+    if (!confirm('Are you sure you want to release these funds to the user\'s wallet early? This will credit the principal and any interest earned so far.')) return
+
+    setActionLoading(true)
+    try {
+      await adminAPI.releaseSavingsFunds(savingId)
+      alert('Funds released successfully!')
+      loadUser() // Reload to show updated balance and saving status
+    } catch (err) {
+      console.error('Failed to release funds:', err)
+      alert(err.response?.data?.message || 'Failed to release funds')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-700 border-green-200'
@@ -75,8 +125,45 @@ export default function UserDetail() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="animate-spin text-primary-600" size={32} />
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="animate-pulse bg-gray-200 rounded-lg w-10 h-10" />
+              <div>
+                <div className="animate-pulse bg-gray-200 rounded w-32 h-7 mb-2" />
+                <div className="animate-pulse bg-gray-200 rounded w-48 h-4" />
+              </div>
+            </div>
+            <div className="animate-pulse bg-gray-200 rounded-lg w-32 h-10" />
+          </div>
+          <div className="card">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+              <div className="animate-pulse bg-gray-200 rounded-full w-20 h-20" />
+              <div className="flex-1">
+                <div className="flex flex-wrap items-center gap-3 mb-2">
+                  <div className="animate-pulse bg-gray-200 rounded w-40 h-6" />
+                  <div className="animate-pulse bg-gray-200 rounded-full w-16 h-6" />
+                  <div className="animate-pulse bg-gray-200 rounded-full w-20 h-6" />
+                </div>
+                <div className="animate-pulse bg-gray-200 rounded w-48 h-4" />
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1,2,3].map(i => (
+              <div key={i} className="card">
+                <div className="animate-pulse bg-gray-200 rounded w-40 h-5 mb-4" />
+                <div className="space-y-4">
+                  {[1,2,3,4].map(j => (
+                    <div key={j} className="flex justify-between items-center">
+                      <div className="animate-pulse bg-gray-200 rounded w-24 h-4" />
+                      <div className="animate-pulse bg-gray-200 rounded w-20 h-4" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </AdminLayout>
     )
@@ -99,7 +186,7 @@ export default function UserDetail() {
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button onClick={() => navigate('/admin/users')} className="p-2 hover:bg-muted rounded-lg transition-colors">
               <ArrowLeft size={20} className="text-text-muted" />
@@ -109,11 +196,19 @@ export default function UserDetail() {
               <p className="text-text-muted">View and manage user information</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button 
+              onClick={handleImpersonate}
+              disabled={impersonating || actionLoading}
+              className="btn bg-primary-100 text-primary-700 hover:bg-primary-200"
+            >
+              {impersonating ? <Loader2 className="animate-spin" size={18} /> : <LogIn size={18} />}
+              Login to Account
+            </button>
             {user.status === 'active' ? (
               <button 
                 onClick={() => handleStatusChange('suspended')} 
-                disabled={actionLoading}
+                disabled={actionLoading || impersonating}
                 className="btn bg-red-100 text-red-700 hover:bg-red-200"
               >
                 {actionLoading ? <Loader2 className="animate-spin" size={18} /> : <UserX size={18} />}
@@ -122,7 +217,7 @@ export default function UserDetail() {
             ) : (
               <button 
                 onClick={() => handleStatusChange('active')} 
-                disabled={actionLoading}
+                disabled={actionLoading || impersonating}
                 className="btn btn-primary"
               >
                 {actionLoading ? <Loader2 className="animate-spin" size={18} /> : <UserCheck size={18} />}
@@ -244,7 +339,7 @@ export default function UserDetail() {
           </div>
         </div>
 
-        {/* Recent Activity Section */}
+        {/* Activity Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Loans */}
           <div className="card">
@@ -263,7 +358,7 @@ export default function UserDetail() {
                       <p className="text-xs text-text-muted">{formatDate(loan.created_at)}</p>
                     </div>
                     <span className={`badge ${
-                      loan.status === 'approved' ? 'badge-success' :
+                      loan.status === 'approved' || loan.status === 'disbursed' ? 'badge-success' :
                       loan.status === 'pending' ? 'badge-warning' :
                       loan.status === 'rejected' ? 'badge-error' : ''
                     }`}>{loan.status}</span>
@@ -298,6 +393,49 @@ export default function UserDetail() {
               </div>
             ) : (
               <p className="text-text-muted text-sm text-center py-8">No transactions yet</p>
+            )}
+          </div>
+
+          {/* Recent Savings */}
+          <div className="card lg:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium text-text flex items-center gap-2">
+                <PiggyBank size={18} className="text-primary-600" /> Recent Savings
+              </h3>
+            </div>
+            {user.user_savings && user.user_savings.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {user.user_savings.slice(0, 4).map(saving => (
+                  <div key={saving.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-text">{saving.name || saving.savings_plan?.name}</p>
+                      <p className="text-xs text-text-muted">
+                        {saving.duration?.lock_period_days === 0 ? 'Flexible' : `${saving.duration?.lock_period_days} days`} • {saving.duration?.interest_rate}% P.A.
+                      </p>
+                      <p className="text-xs text-text-muted mt-1">Locked: {formatCurrency(saving.amount)}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex flex-col items-end gap-2">
+                        <span className={`badge ${
+                          saving.status === 'active' ? 'badge-success' : 'badge-neutral'
+                        }`}>{saving.status}</span>
+                        {saving.status === 'active' && (
+                          <button 
+                            onClick={() => handleReleaseFunds(saving.id)}
+                            disabled={actionLoading}
+                            className="text-[10px] bg-primary-600 text-white px-2 py-1 rounded hover:bg-primary-700 transition-colors disabled:opacity-50"
+                          >
+                            {actionLoading ? 'Processing...' : 'Release Funds'}
+                          </button>
+                        )}
+                        <p className="text-xs text-primary-600 font-semibold">Total: {formatCurrency(Number(saving.amount) + Number(saving.accrued_interest || 0))}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-text-muted text-sm text-center py-8">No savings yet</p>
             )}
           </div>
         </div>

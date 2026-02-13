@@ -126,8 +126,42 @@ export default function AdminKYCReview() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="animate-spin text-primary-600" size={32} />
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="animate-pulse bg-gray-200 rounded w-36 h-7 mb-2" />
+              <div className="animate-pulse bg-gray-200 rounded w-56 h-4" />
+            </div>
+            <div className="animate-pulse bg-gray-200 rounded-lg w-40 h-8" />
+          </div>
+          <div className="card flex flex-wrap gap-2">
+            {[1,2,3,4].map(i => <div key={i} className="animate-pulse bg-gray-200 rounded-lg w-20 h-8" />)}
+          </div>
+          <div className="card p-0">
+            <div className="p-4 border-b border-gray-100">
+              <div className="animate-pulse bg-gray-200 rounded w-48 h-5 mb-1" />
+              <div className="animate-pulse bg-gray-200 rounded w-24 h-4" />
+            </div>
+            <div className="divide-y divide-gray-100">
+              {[1,2,3,4,5].map(i => (
+                <div key={i} className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-4">
+                    <div className="animate-pulse bg-gray-200 rounded-full w-12 h-12" />
+                    <div>
+                      <div className="animate-pulse bg-gray-200 rounded w-32 h-4 mb-1" />
+                      <div className="animate-pulse bg-gray-200 rounded w-40 h-3" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex gap-2">
+                      <div className="animate-pulse bg-gray-200 rounded-full w-20 h-6" />
+                    </div>
+                    <div className="animate-pulse bg-gray-200 rounded w-5 h-5" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </AdminLayout>
     )
